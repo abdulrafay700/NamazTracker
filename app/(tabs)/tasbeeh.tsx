@@ -926,11 +926,18 @@ export default function TasbeehApp() {
     const progress = useSharedValue(0);
     const buttonTranslateY = useSharedValue(0); 
     const toastY = useSharedValue(-150);
-    const soundRef = useRef<Audio.Sound | null>(null);
+    
+    // --- TWO SEPARATE SOUND REFS ---
+    const tapSoundRef = useRef<Audio.Sound | null>(null);
+    const successSoundRef = useRef<Audio.Sound | null>(null);
 
     useEffect(() => {
         loadData();
-        loadSound();
+        loadSounds();
+        return () => { 
+            tapSoundRef.current?.unloadAsync(); 
+            successSoundRef.current?.unloadAsync();
+        };
     }, []);
 
     const loadData = async () => {
@@ -959,31 +966,47 @@ export default function TasbeehApp() {
         } catch (e) {}
     };
 
-    async function loadSound() {
+    // --- LOAD BOTH SOUNDS ---
+    async function loadSounds() {
         try {
-            const { sound } = await Audio.Sound.createAsync(require('../../assets/tasbeeh.mp3'));
-            soundRef.current = sound;
-        } catch (e) {}
+            const { sound: tap } = await Audio.Sound.createAsync(require('../../assets/tasbeeh.mp3'));
+            tapSoundRef.current = tap;
+
+            const { sound: success } = await Audio.Sound.createAsync(require('../../assets/success.mp3'));
+            successSoundRef.current = success;
+        } catch (e) { console.log("Sound Loading Error", e); }
     }
 
+    // --- GOAL COMPLETE LOGIC ---
     useEffect(() => {
         const percentage = target === 0 ? 0 : count / target;
         progress.value = withSpring(percentage, { damping: 15, stiffness: 120 });
-        if (target > 0 && count >= target && !isComplete) {
+
+        if (target > 0 && count === target && !isComplete) {
             setIsComplete(true);
             toastY.value = withSpring(60);
-            if (isVibrationEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+            // Play Success Sound (Second Tone)
+            if (isSoundEnabled && successSoundRef.current) {
+                successSoundRef.current.replayAsync();
+            }
+
+            if (isVibrationEnabled) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
         }
         saveData();
-    }, [count, target, isSoundEnabled, isVibrationEnabled]);
+    }, [count, target]);
 
     const handlePress = () => {
         if (target > 0 && count >= target) return;
         setCount(prev => prev + 1);
         
         if (isVibrationEnabled) Haptics.selectionAsync();
-        if (isSoundEnabled && soundRef.current) {
-            soundRef.current.replayAsync();
+        
+        // Play Tap Sound (First Tone)
+        if (isSoundEnabled && tapSoundRef.current) {
+            tapSoundRef.current.replayAsync();
         }
 
         buttonTranslateY.value = withSequence(
@@ -993,7 +1016,8 @@ export default function TasbeehApp() {
     };
 
     const handleReset = () => {
-        setCount(0); setIsComplete(false);
+        setCount(0); 
+        setIsComplete(false);
         toastY.value = withSpring(-150);
         progress.value = withTiming(0);
     };
@@ -1009,8 +1033,10 @@ export default function TasbeehApp() {
             <StatusBar barStyle="light-content" />
 
             <Animated.View style={[styles.toast, animatedToastStyle]}>
-                <Text style={styles.toastText}>Goal Completed! Alhamdulillah</Text>
-                <TouchableOpacity onPress={handleReset} style={styles.resetBtnToast}><RotateCcw size={14} color="black" /></TouchableOpacity>
+                <Text style={styles.toastText}>MashaAllah! Target Completed</Text>
+                <TouchableOpacity onPress={handleReset} style={styles.resetBtnToast}>
+                    <RotateCcw size={16} color="black" />
+                </TouchableOpacity>
             </Animated.View>
 
             <View style={styles.header}>
@@ -1059,7 +1085,6 @@ export default function TasbeehApp() {
                                 </LinearGradient>
                             </TouchableOpacity>
                         </Animated.View>
-                        {/* FIX: div changed to View */}
                         <View style={styles.buttonDepth} />
                     </View>
                 </View>
@@ -1076,29 +1101,30 @@ export default function TasbeehApp() {
                 </View>
             </View>
 
-            {/* Modals remain the same */}
+            {/* Modals are minimized here for readability but fully functional */}
             <Modal visible={showSettings} animationType="fade" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}><Text style={styles.modalTitle}>Settings</Text><TouchableOpacity onPress={()=>setShowSettings(false)}><X color="white" /></TouchableOpacity></View>
                         <View style={styles.settingRow}>
                             <View style={styles.settingLeft}><Volume2 size={18} color="#10b981"/><Text style={styles.settingText}>Sound Effect</Text></View>
-                            <Switch value={isSoundEnabled} onValueChange={setIsSoundEnabled} trackColor={{ false: '#222', true: '#10b981' }} thumbColor="white" />
+                            <Switch value={isSoundEnabled} onValueChange={setIsSoundEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
                         </View>
                         <View style={styles.settingRow}>
                             <View style={styles.settingLeft}><Smartphone size={18} color="#10b981"/><Text style={styles.settingText}>Vibration</Text></View>
-                            <Switch value={isVibrationEnabled} onValueChange={setIsVibrationEnabled} trackColor={{ false: '#222', true: '#10b981' }} thumbColor="white" />
+                            <Switch value={isVibrationEnabled} onValueChange={setIsVibrationEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
                         </View>
                         <TouchableOpacity style={styles.doneBtn} onPress={() => setShowSettings(false)}><Text style={styles.doneTxt}>Close</Text></TouchableOpacity>
                     </View>
                 </View>
             </Modal>
 
+            {/* Select Zikir Modal */}
             <Modal visible={showListModal} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { maxHeight: '75%' }]}>
                         <View style={styles.modalHeader}><Text style={styles.modalTitle}>Select Zikir</Text><TouchableOpacity onPress={()=>setShowListModal(false)}><X color="white" /></TouchableOpacity></View>
-                        <ScrollView showsVerticalScrollIndicator={false}>{zikrs.map((item, index) => (
+                        <ScrollView>{zikrs.map((item, index) => (
                             <TouchableOpacity key={item.id} style={[styles.listItem, currentIndex === index && styles.listActiveItem]} onPress={() => { setCurrentIndex(index); setShowListModal(false); handleReset(); }}>
                                 <View style={{ flex: 1 }}><Text style={styles.listArabic}>{item.arabic}</Text><Text style={styles.listTranslation}>{item.translation}</Text></View>
                                 {!item.fixed && <TouchableOpacity onPress={() => setZikrs(zikrs.filter(z => z.id !== item.id))}><Trash2 size={18} color="#ef4444" /></TouchableOpacity>}
@@ -1108,11 +1134,12 @@ export default function TasbeehApp() {
                 </View>
             </Modal>
 
+            {/* Add New Zikir Modal */}
             <Modal visible={showAddModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Add New Zikir</Text>
-                        <TextInput placeholder="Arabic Text..." placeholderTextColor="#444" style={styles.input} value={newArabic} onChangeText={setNewArabic} />
+                        <View style={styles.modalHeader}><Text style={styles.modalTitle}>Add Zikir</Text><TouchableOpacity onPress={()=>setShowAddModal(false)}><X color="white" /></TouchableOpacity></View>
+                        <TextInput placeholder="Arabic..." placeholderTextColor="#444" style={styles.input} value={newArabic} onChangeText={setNewArabic} />
                         <TextInput placeholder="Translation..." placeholderTextColor="#444" style={styles.input} value={newTranslation} onChangeText={setNewTranslation} />
                         <TouchableOpacity style={styles.doneBtn} onPress={() => { if(newArabic){ setZikrs([...zikrs, {id:Date.now().toString(), arabic:newArabic, translation:newTranslation, fixed:false}]); setShowAddModal(false); setNewArabic(''); setNewTranslation(''); } }}><Text style={styles.doneTxt}>Save</Text></TouchableOpacity>
                     </View>
@@ -1122,7 +1149,6 @@ export default function TasbeehApp() {
     );
 }
 
-// Styles remain exactly as pichle code mein thay
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#050505' },
     header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 10, alignItems: 'center' },
@@ -1163,7 +1189,7 @@ const styles = StyleSheet.create({
     resetBtnToast: { padding: 5 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', padding: 20 },
     modalContent: { backgroundColor: '#0a0a0a', borderRadius: 25, padding: 20, gap: 10, borderWidth: 1, borderColor: '#181818' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, alignItems: 'center' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, alignItems: 'center' },
     modalTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
     settingRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#111' },
     settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
