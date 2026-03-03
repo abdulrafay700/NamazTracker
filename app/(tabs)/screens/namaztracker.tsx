@@ -1,13 +1,14 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CheckCircle2, ChevronDown, Circle, CircleCheck, Clock, Settings2 } from 'lucide-react-native';
+import { CheckCircle2, Circle, CircleCheck, Clock, MapPin, Settings2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 
 type NamazName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
 
 const defaultStatus: Record<NamazName, boolean> = {
-  Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false
+  Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false,
 };
 
 export default function NamazFinalApp() {
@@ -18,20 +19,30 @@ export default function NamazFinalApp() {
   const [dayRecords, setDayRecords] = useState<Record<NamazName, boolean>>(defaultStatus);
   const [rangeStats, setRangeStats] = useState({ totalAda: 0, totalQaza: 0 });
   const [prayerTimes, setPrayerTimes] = useState<any>(null);
+  
+  // Custom Alert & Animation State
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<Record<NamazName, boolean> | null>(null);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(0.8));
 
-  // Aaj ki date string format mein
   const todayStr = new Date().toISOString().split('T')[0];
 
-  useEffect(() => {
-    loadStartDate();
-  }, []);
+  useEffect(() => { loadStartDate(); }, []);
+  useEffect(() => { if (startDate) { refreshAllData(); fetchPrayerTimes(); } }, [selectedDate, sect, startDate]);
 
+  // Modal Animation Logic
   useEffect(() => {
-    if (startDate) {
-      refreshAllData();
-      fetchPrayerTimes();
+    if (showConfirm) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(scaleAnim, { toValue: 1, friction: 5, useNativeDriver: true })
+      ]).start();
+    } else {
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.8);
     }
-  }, [selectedDate, sect, startDate]);
+  }, [showConfirm]);
 
   const loadStartDate = async () => {
     const saved = await AsyncStorage.getItem('tracking_start_date');
@@ -43,147 +54,124 @@ export default function NamazFinalApp() {
     try {
       const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Karachi&country=Pakistan&method=${method}`);
       const data = await res.json();
-      setPrayerTimes(data.data.timings);
-    } catch (e) { console.log(e); }
+      if (data.code === 200) setPrayerTimes(data.data.timings);
+    } catch (e) { console.error(e); }
   };
 
   const refreshAllData = async () => {
     if (!startDate) return;
-    let markers: any = {};
-    let totalAda = 0;
-    let totalDays = 0;
-    const start = new Date(startDate);
-    const today = new Date();
+    const markers: any = {};
+    let totalAda = 0, totalDays = 0;
+    const start = new Date(startDate), end = new Date(todayStr);
 
-    for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(start); d <= end; d = new Date(d.setDate(d.getDate() + 1))) {
       const dateStr = d.toISOString().split('T')[0];
       const saved = await AsyncStorage.getItem(`status_${dateStr}`);
-      const status = saved ? JSON.parse(saved) : defaultStatus;
+      const status = saved ? JSON.parse(saved) : { ...defaultStatus };
       const prayedCount = Object.values(status).filter(Boolean).length;
-      totalAda += prayedCount;
-      totalDays++;
-
+      totalAda += prayedCount; totalDays++;
+      
       markers[dateStr] = {
         customStyles: {
-          container: {
-            backgroundColor: prayedCount === 5 ? '#10b981' : '#ef4444',
-            borderRadius: 8,
-            borderWidth: dateStr === selectedDate ? 2 : 0,
-            borderColor: '#fff'
+          container: { 
+            backgroundColor: prayedCount === 5 ? '#10b981' : prayedCount > 0 ? '#f59e0b' : '#ef4444', 
+            borderRadius: 8, 
+            borderWidth: dateStr === selectedDate ? 2 : 0, 
+            borderColor: '#fff' 
           },
-          text: { color: 'white', fontWeight: 'bold' }
-        }
+          text: { color: 'white', fontWeight: 'bold' },
+        },
       };
     }
-
     const currentSaved = await AsyncStorage.getItem(`status_${selectedDate}`);
-    setDayRecords(currentSaved ? JSON.parse(currentSaved) : defaultStatus);
+    setDayRecords(currentSaved ? JSON.parse(currentSaved) : { ...defaultStatus });
     setMarkedDates(markers);
     setRangeStats({ totalAda, totalQaza: totalDays * 5 - totalAda });
   };
 
-  const toggleNamaz = async (name: NamazName) => {
-    if (dayRecords[name]) {
-      Alert.alert("Already Prayed", "Yeh namaz pehle hi tick ho chuki hai.");
-      return;
-    }
-    const newStatus = { ...dayRecords, [name]: true };
-    setDayRecords(newStatus);
-    await AsyncStorage.setItem(`status_${selectedDate}`, JSON.stringify(newStatus));
+  const finalizeSave = async (statusToSave: Record<NamazName, boolean>) => {
+    await AsyncStorage.setItem(`status_${selectedDate}`, JSON.stringify(statusToSave));
+    setDayRecords(statusToSave);
+    setShowConfirm(false);
     refreshAllData();
   };
 
-  const handleReset = () => {
-    Alert.alert("Change Start Date", "Kya aap start date badalna chahte hain?", [
-      { text: "No" },
-      { text: "Yes", onPress: async () => { 
-        await AsyncStorage.removeItem('tracking_start_date');
-        setStartDate(null); 
-      }}
-    ]);
+  const toggleNamaz = async (name: NamazName) => {
+    if (selectedDate > todayStr) return;
+    const isChecking = !dayRecords[name];
+    const newStatus = { ...dayRecords, [name]: isChecking };
+    
+    if (isChecking && Object.values(newStatus).every(Boolean)) {
+      setPendingStatus(newStatus);
+      setShowConfirm(true);
+    } else {
+      await finalizeSave(newStatus);
+    }
   };
 
-  // Setup Screen (Sirf pehli baar dikhegi)
-  if (!startDate) {
-    return (
-      <View style={styles.setup}>
-        <Text style={styles.setupTitle}>Start Date Select Karein</Text>
-        <Calendar
-          maxDate={todayStr} // Future dates hide ho jayengi
-          onDayPress={(day) => {
-            AsyncStorage.setItem('tracking_start_date', day.dateString);
-            setStartDate(day.dateString);
-          }}
-          theme={{ calendarBackground: '#000', dayTextColor: '#fff', todayTextColor: '#10b981', textDisabledColor: '#222' }}
-        />
-      </View>
-    );
-  }
+  if (!startDate) return (
+    <View style={styles.setup}>
+      <Text style={styles.setupTitle}>Select Start Date</Text>
+      <Calendar maxDate={todayStr} onDayPress={(day) => { AsyncStorage.setItem('tracking_start_date', day.dateString); setStartDate(day.dateString); }} theme={{ calendarBackground: '#000', dayTextColor: '#fff', todayTextColor: '#10b981' }} />
+    </View>
+  );
 
-  const isComplete = Object.values(dayRecords).every(Boolean);
+  const isAllDone = Object.values(dayRecords).every(Boolean);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleReset}>
-          <Text style={styles.locLabel}>Karachi</Text>
-          <View style={styles.rangeRow}>
-            <Text style={styles.rangeText}>START: {startDate} ➔ TODAY</Text>
-            <ChevronDown size={14} color="#ef4444" style={{ marginLeft: 5 }} />
-          </View>
-        </TouchableOpacity>
+      
+      {/* Animated Custom Alert Modal */}
+      <Modal visible={showConfirm} transparent animationType="none">
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.sweetAlert, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+            <CircleCheck size={55} color="#10b981" />
+            <Text style={styles.alertTitle}>MASHALLAH!</Text>
+            <Text style={styles.alertMsg}>Have you completed all your prayers for today?</Text>
+            <View style={styles.alertButtons}>
+              <TouchableOpacity style={[styles.btn, styles.btnNo]} onPress={() => setShowConfirm(false)}>
+                <Text style={styles.btnTextNo}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, styles.btnYes]} onPress={() => pendingStatus && finalizeSave(pendingStatus)}>
+                <Text style={styles.btnTextYes}>Yes, Confirmed</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
 
+      <View style={styles.header}>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <MapPin size={24} color="#10b981" />
+            <Text style={styles.locLabel}>Karachi</Text>
+          </View>
+          <Text style={styles.rangeText}>STARTED: {startDate}</Text>
+        </View>
         <TouchableOpacity onPress={() => setSect(sect === 'Hanafi' ? 'Jafari' : 'Hanafi')} style={styles.sectBtn}>
           <Settings2 size={14} color="#10b981" />
           <Text style={styles.sectBtnText}>{sect}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNum, { color: '#10b981' }]}>{rangeStats.totalAda}</Text>
-          <Text style={styles.statLabel}>TOTAL ADA</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNum, { color: '#ef4444' }]}>{rangeStats.totalQaza}</Text>
-          <Text style={styles.statLabel}>TOTAL QAZA</Text>
-        </View>
+        <View style={styles.statCard}><Text style={[styles.statNum, { color: '#10b981' }]}>{rangeStats.totalAda}</Text><Text style={styles.statLabel}>COMPLETED</Text></View>
+        <View style={styles.statCard}><Text style={[styles.statNum, { color: '#ef4444' }]}>{rangeStats.totalQaza}</Text><Text style={styles.statLabel}>MISSED</Text></View>
       </View>
 
-      {/* Main Calendar */}
-      <Calendar
-        markingType="custom"
-        markedDates={markedDates}
-        maxDate={todayStr} // Aaj se agay ki dates disable hain
-        onDayPress={(day) => {
-          if (day.dateString <= todayStr) {
-            setSelectedDate(day.dateString);
-          }
-        }}
-        theme={{ 
-          calendarBackground: '#000', 
-          dayTextColor: '#fff', 
-          monthTextColor: '#10b981', 
-          todayTextColor: '#10b981',
-          textDisabledColor: '#222' 
-        }}
-      />
+      <Calendar markingType="custom" markedDates={markedDates} maxDate={todayStr} onDayPress={(day) => setSelectedDate(day.dateString)} theme={{ calendarBackground: '#000', dayTextColor: '#fff', monthTextColor: '#10b981', todayTextColor: '#10b981' }} />
 
-      {/* Namaz Details Table */}
       <View style={styles.detailContainer}>
         <Text style={styles.detailHeader}>{sect} Times - {selectedDate}</Text>
         
-        {selectedDate > todayStr ? (
+        {isAllDone ? (
           <View style={styles.congratulationBox}>
-            <Text style={{ color: '#666', textAlign: 'center' }}>Future date record not available.</Text>
-          </View>
-        ) : isComplete ? (
-          <View style={styles.congratulationBox}>
-            <CircleCheck size={50} color="#10b981" />
+            <CircleCheck size={60} color="#10b981" />
             <Text style={styles.arabicText}>مَاشَاءَ ٱللَّٰهُ</Text>
-            <Text style={styles.congratText}>All prayers completed!</Text>
+            <Text style={styles.congratText}>All prayers completed for today!</Text>
+            <TouchableOpacity style={styles.undoBtn} onPress={() => finalizeSave({...dayRecords, Isha: false})}>
+              <Text style={styles.undoBtnText}>Edit Entry</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           (Object.keys(defaultStatus) as NamazName[]).map((name) => (
@@ -210,22 +198,35 @@ const styles = StyleSheet.create({
   setup: { flex: 1, backgroundColor: '#000', justifyContent: 'center', padding: 25 },
   setupTitle: { color: '#10b981', fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40, marginBottom: 25 },
-  locLabel: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  rangeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  rangeText: { color: '#ef4444', fontSize: 11, fontWeight: 'bold' },
+  locLabel: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
+  rangeText: { color: '#666', fontSize: 11, marginTop: 4 },
   sectBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', paddingHorizontal: 12, borderRadius: 12, height: 40 },
   sectBtnText: { color: '#10b981', marginLeft: 6, fontWeight: 'bold' },
   statsContainer: { flexDirection: 'row', gap: 15, marginBottom: 25 },
   statCard: { flex: 1, backgroundColor: '#080808', padding: 15, borderRadius: 18, alignItems: 'center', borderWidth: 1, borderColor: '#111' },
   statNum: { fontSize: 24, fontWeight: 'bold' },
   statLabel: { color: '#444', fontSize: 10, fontWeight: 'bold', marginTop: 5 },
-  detailContainer: { marginTop: 25, padding: 20, backgroundColor: '#050505', borderRadius: 25 },
+  detailContainer: { marginTop: 25, padding: 20, backgroundColor: '#050505', borderRadius: 25, minHeight: 350 },
   detailHeader: { color: '#10b981', fontSize: 13, fontWeight: 'bold', marginBottom: 20 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#111' },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#111' },
   rowLeft: { flexDirection: 'row', alignItems: 'center' },
   nameText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   timeText: { color: '#666', fontSize: 13, marginTop: 4 },
-  congratulationBox: { alignItems: 'center', paddingVertical: 50 },
-  arabicText: { color: '#10b981', fontSize: 35, marginVertical: 15 },
-  congratText: { color: '#fff', textAlign: 'center' }
+  congratulationBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
+  arabicText: { color: '#10b981', fontSize: 35, fontWeight: 'bold', marginVertical: 15 },
+  congratText: { color: '#fff', fontSize: 16, marginBottom: 25 },
+  undoBtn: { backgroundColor: '#111', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+  undoBtnText: { color: '#10b981', fontWeight: 'bold', fontSize: 12 },
+  
+  // Custom Animated Alert Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
+  sweetAlert: { width: '85%', backgroundColor: '#0a0a0a', borderRadius: 30, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: '#222', shadowColor: '#10b981', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 20 },
+  alertTitle: { color: '#10b981', fontSize: 24, fontWeight: 'bold', marginTop: 20, letterSpacing: 1 },
+  alertMsg: { color: '#999', textAlign: 'center', marginTop: 12, fontSize: 15, lineHeight: 22 },
+  alertButtons: { flexDirection: 'row', marginTop: 35, width: '100%', gap: 12 },
+  btn: { flex: 1, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  btnNo: { backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333' },
+  btnYes: { backgroundColor: '#10b981' },
+  btnTextNo: { color: '#888', fontWeight: 'bold', fontSize: 14 },
+  btnTextYes: { color: '#000', fontWeight: 'bold', fontSize: 14 },
 });
