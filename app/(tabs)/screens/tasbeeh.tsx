@@ -1,10 +1,352 @@
 
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { Audio } from 'expo-av';
+// import * as Haptics from 'expo-haptics';
+// import { LinearGradient } from 'expo-linear-gradient';
+// import { ChevronDown, Plus, RotateCcw, Settings, Smartphone, Target, Trash2, Volume2, X } from 'lucide-react-native';
+// import React, { useEffect, useRef, useState } from 'react';
+// import {
+//     Dimensions, Modal, Platform, SafeAreaView, ScrollView,
+//     StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View
+// } from 'react-native';
+// import Animated, {
+//     Easing,
+//     useAnimatedProps, useAnimatedStyle, useSharedValue,
+//     withSequence, withSpring, withTiming
+// } from 'react-native-reanimated';
+// import Svg, { Circle } from 'react-native-svg';
+
+// const { width } = Dimensions.get('window');
+// const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+// const CIRCLE_LENGTH = 750; 
+// const R = 110; 
+
+// const INITIAL_ZIKRS = [
+//     { id: '1', arabic: "سُبْحَانَ ٱللَّٰهِ", translation: "Glory be to Allah", fixed: true },
+//     { id: '2', arabic: "ٱلْحَمْدُ لِلَّٰهِ", translation: "Praise be to Allah", fixed: true },
+//     { id: '3', arabic: "اللهُ أَكْبَرُ", translation: "Allah is the Greatest", fixed: true },
+//     { id: '4', arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", translation: "There is no god but Allah", fixed: true },
+// ];
+
+// export default function TasbeehApp() {
+//     const [zikrs, setZikrs] = useState(INITIAL_ZIKRS);
+//     const [currentIndex, setCurrentIndex] = useState(0);
+//     const [count, setCount] = useState(0);
+//     const [target, setTarget] = useState(33);
+//     const [isComplete, setIsComplete] = useState(false);
+//     const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+//     const [isVibrationEnabled, setIsVibrationEnabled] = useState(true);
+    
+//     const [showAddModal, setShowAddModal] = useState(false);
+//     const [showListModal, setShowListModal] = useState(false);
+//     const [showSettings, setShowSettings] = useState(false);
+//     const [newArabic, setNewArabic] = useState('');
+//     const [newTranslation, setNewTranslation] = useState('');
+
+//     const progress = useSharedValue(0);
+//     const buttonTranslateY = useSharedValue(0); 
+//     const toastY = useSharedValue(-150);
+//     const lcdScale = useSharedValue(1); 
+    
+//     const tapSoundRef = useRef<Audio.Sound | null>(null);
+//     const successSoundRef = useRef<Audio.Sound | null>(null);
+
+//     useEffect(() => {
+//         loadData();
+//         loadSounds();
+//         return () => { 
+//             tapSoundRef.current?.unloadAsync(); 
+//             successSoundRef.current?.unloadAsync();
+//         };
+//     }, []);
+
+//     const loadData = async () => {
+//         try {
+//             const savedCount = await AsyncStorage.getItem('tasbeeh_count');
+//             const savedZikrs = await AsyncStorage.getItem('tasbeeh_zikrs');
+//             const savedSettings = await AsyncStorage.getItem('tasbeeh_settings');
+//             if (savedCount) setCount(parseInt(savedCount));
+//             if (savedZikrs) {
+//                 const parsed = JSON.parse(savedZikrs);
+//                 setZikrs([...INITIAL_ZIKRS, ...parsed.filter((z: any) => !z.fixed)]);
+//             }
+//             if (savedSettings) {
+//                 const { sound, vibe } = JSON.parse(savedSettings);
+//                 setIsSoundEnabled(sound ?? true); 
+//                 setIsVibrationEnabled(vibe ?? true);
+//             }
+//         } catch (e) {}
+//     };
+
+//     const saveData = async () => {
+//         try {
+//             await AsyncStorage.setItem('tasbeeh_count', count.toString());
+//             await AsyncStorage.setItem('tasbeeh_zikrs', JSON.stringify(zikrs.filter(z => !z.fixed)));
+//             await AsyncStorage.setItem('tasbeeh_settings', JSON.stringify({ sound: isSoundEnabled, vibe: isVibrationEnabled }));
+//         } catch (e) {}
+//     };
+
+//     async function loadSounds() {
+//         try {
+//             const { sound: tap } = await Audio.Sound.createAsync(require('../../../assets/tasbeeh.mp3'));
+//             tapSoundRef.current = tap;
+//             const { sound: success } = await Audio.Sound.createAsync(require('../../../assets/success.mp3'));
+//             successSoundRef.current = success;
+//         } catch (e) { console.log("Sound Loading Error", e); }
+//     }
+
+//     useEffect(() => {
+//         if (target > 0) {
+//             const percentage = count / target;
+//             progress.value = withSpring(percentage, { damping: 15, stiffness: 120 });
+
+//             if (count === target && !isComplete) {
+//                 setIsComplete(true);
+//                 toastY.value = withSpring(60);
+//                 if (isSoundEnabled && successSoundRef.current) successSoundRef.current.replayAsync();
+//                 if (isVibrationEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+//             }
+//         }
+//         saveData();
+//     }, [count, target]);
+
+//     const handlePress = () => {
+//         if (target > 0 && count >= target) return;
+//         setCount(prev => prev + 1);
+        
+//         // Digital LCD Animation (Pop Effect)
+//         lcdScale.value = withSequence(withTiming(1.15, { duration: 50 }), withSpring(1));
+
+//         // Unlimited Goal Sweep Animation
+//         if (target === 0) {
+//             progress.value = withSequence(
+//                 withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }),
+//                 withTiming(0, { duration: 0 })
+//             );
+//         }
+
+//         if (isVibrationEnabled) Haptics.selectionAsync();
+//         if (isSoundEnabled && tapSoundRef.current) tapSoundRef.current.replayAsync();
+
+//         buttonTranslateY.value = withSequence(
+//             withTiming(12, { duration: 60 }),
+//             withSpring(0, { damping: 10, stiffness: 200 })
+//         );
+//     };
+
+//     const handleReset = () => {
+//         setCount(0); 
+//         setIsComplete(false);
+//         toastY.value = withSpring(-150);
+//         progress.value = withTiming(0);
+//     };
+
+//     const animatedCircleProps = useAnimatedProps(() => ({ strokeDashoffset: CIRCLE_LENGTH * (1 - progress.value) }));
+//     const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ translateY: buttonTranslateY.value }] }));
+//     const animatedToastStyle = useAnimatedStyle(() => ({ transform: [{ translateY: toastY.value }] }));
+//     const animatedLcdStyle = useAnimatedStyle(() => ({ transform: [{ scale: lcdScale.value }] }));
+
+//     const currentZikr = zikrs[currentIndex] || INITIAL_ZIKRS[0];
+
+//     return (
+//         <SafeAreaView style={styles.container}>
+//             <StatusBar barStyle="light-content" />
+
+//             <Animated.View style={[styles.toast, animatedToastStyle]}>
+//                 <Text style={styles.toastText}>MashaAllah! Target Completed</Text>
+//                 <TouchableOpacity onPress={handleReset} style={styles.resetBtnToast}><RotateCcw size={16} color="black" /></TouchableOpacity>
+//             </Animated.View>
+
+//             <View style={styles.header}>
+//                 <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.iconBtn}><Settings size={22} color="rgba(255,255,255,0.4)" /></TouchableOpacity>
+//                 <View style={styles.headerCenter}><Target size={14} color="#10b981" /><Text style={styles.headerTitle}>DHIKRFLOW</Text></View>
+//                 <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addZikrHeaderBtn}><Plus size={14} color="#050505" strokeWidth={3} /><Text style={styles.addZikrHeaderText}>Add Zikir</Text></TouchableOpacity>
+//             </View>
+
+//             <TouchableOpacity style={styles.dropdownTrigger} onPress={() => setShowListModal(true)}>
+//                 <Text style={styles.dropdownLabel}>CURRENT DHIKR</Text>
+//                 <View style={styles.currentZikrRow}>
+//                     <View style={{ flex: 1 }}><Text style={styles.currentZikrText}>{currentZikr.arabic}</Text><Text style={styles.currentTranslationText}>{currentZikr.translation}</Text></View>
+//                     <ChevronDown size={18} color="#10b981" />
+//                 </View>
+//             </TouchableOpacity>
+
+//             <View style={styles.main}>
+//                 <View style={styles.circleBox}>
+//                     <Svg width={width} height={260} style={styles.svg}>
+//                         <Circle cx={width/2} cy={130} r={R} stroke="rgba(255,255,255,0.05)" strokeWidth={3} fill="none" />
+//                         <AnimatedCircle cx={width/2} cy={130} r={R} stroke="#10b981" strokeWidth={5} strokeDasharray={CIRCLE_LENGTH} animatedProps={animatedCircleProps} strokeLinecap="round" fill="none" />
+//                     </Svg>
+//                     <LinearGradient colors={['#0f2019', '#08120e']} style={styles.lcdPanel}>
+//                         <Animated.View style={animatedLcdStyle}>
+//                             <Text style={styles.lcdMain}>{count.toString().padStart(5, '0')}</Text>
+//                         </Animated.View>
+//                         <View style={styles.targetIndicator}><Text style={styles.targetLabelText}>GOAL</Text><Text style={styles.targetValueText}>{target || '∞'}</Text></View>
+//                     </LinearGradient>
+//                 </View>
+
+//                 <View style={styles.buttonOuterRing}>
+//                     <View style={styles.buttonCylinder}>
+//                         <Animated.View style={[styles.btn3DMain, animatedButtonStyle]}>
+//                             <TouchableOpacity activeOpacity={1} onPress={handlePress} style={styles.touchable}>
+//                                 <LinearGradient colors={['#34d399', '#10b981', '#064e3b']} style={styles.glassEffect}>
+//                                     <View style={styles.buttonReflex} /><Text style={styles.tapLabelText}>TAP</Text>
+//                                 </LinearGradient>
+//                             </TouchableOpacity>
+//                         </Animated.View>
+//                         <View style={styles.buttonDepth} />
+//                     </View>
+//                 </View>
+//             </View>
+
+//             <View style={styles.footer}>
+//                 <TouchableOpacity onPress={handleReset} style={styles.bottomReset}><RotateCcw size={22} color="white" /></TouchableOpacity>
+//                 <View style={styles.targetRow}>
+//                     {[33, 100, 1000, 0].map(t => (
+//                         <TouchableOpacity key={t} onPress={() => {setTarget(t); handleReset();}} style={[styles.tBtn, target === t && styles.tActive]}>
+//                             <Text style={[styles.tText, target === t && {color: '#10b981'}]}>{t || '∞'}</Text>
+//                         </TouchableOpacity>
+//                     ))}
+//                 </View>
+//             </View>
+
+//             {/* Modals logic same as your code */}
+//             <Modal visible={showSettings} animationType="fade" transparent>
+//                 <View style={styles.modalOverlay}>
+//                     <View style={styles.modalContent}>
+//                         <View style={styles.modalHeader}><Text style={styles.modalTitle}>Settings</Text><TouchableOpacity onPress={()=>setShowSettings(false)}><X color="white" /></TouchableOpacity></View>
+//                         <View style={styles.settingRow}>
+//                             <View style={styles.settingLeft}><Volume2 size={18} color="#10b981"/><Text style={styles.settingText}>Sound Effect</Text></View>
+//                             <Switch value={isSoundEnabled} onValueChange={setIsSoundEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
+//                         </View>
+//                         <View style={styles.settingRow}>
+//                             <View style={styles.settingLeft}><Smartphone size={18} color="#10b981"/><Text style={styles.settingText}>Vibration</Text></View>
+//                             <Switch value={isVibrationEnabled} onValueChange={setIsVibrationEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
+//                         </View>
+//                         <TouchableOpacity style={styles.doneBtn} onPress={() => setShowSettings(false)}><Text style={styles.doneTxt}>Close</Text></TouchableOpacity>
+//                     </View>
+//                 </View>
+//             </Modal>
+
+//             {/* List and Add Zikir Modals remain the same... */}
+//             <Modal visible={showListModal} animationType="slide" transparent>
+//                 <View style={styles.modalOverlay}>
+//                     <View style={[styles.modalContent, { maxHeight: '75%' }]}>
+//                         <View style={styles.modalHeader}><Text style={styles.modalTitle}>Select Zikir</Text><TouchableOpacity onPress={()=>setShowListModal(false)}><X color="white" /></TouchableOpacity></View>
+//                         <ScrollView>{zikrs.map((item, index) => (
+//                             <TouchableOpacity key={item.id} style={[styles.listItem, currentIndex === index && styles.listActiveItem]} onPress={() => { setCurrentIndex(index); setShowListModal(false); handleReset(); }}>
+//                                 <View style={{ flex: 1 }}><Text style={styles.listArabic}>{item.arabic}</Text><Text style={styles.listTranslation}>{item.translation}</Text></View>
+//                                 {!item.fixed && <TouchableOpacity onPress={() => setZikrs(zikrs.filter(z => z.id !== item.id))}><Trash2 size={18} color="#ef4444" /></TouchableOpacity>}
+//                             </TouchableOpacity>
+//                         ))}</ScrollView>
+//                     </View>
+//                 </View>
+//             </Modal>
+
+//             <Modal visible={showAddModal} transparent animationType="fade">
+//                 <View style={styles.modalOverlay}>
+//                     <View style={styles.modalContent}>
+//                         <View style={styles.modalHeader}><Text style={styles.modalTitle}>Add Zikir</Text><TouchableOpacity onPress={()=>setShowAddModal(false)}><X color="white" /></TouchableOpacity></View>
+//                         <TextInput placeholder="Arabic..." placeholderTextColor="#444" style={styles.input} value={newArabic} onChangeText={setNewArabic} />
+//                         <TextInput placeholder="Translation..." placeholderTextColor="#444" style={styles.input} value={newTranslation} onChangeText={setNewTranslation} />
+//                         <TouchableOpacity style={styles.doneBtn} onPress={() => { if(newArabic){ setZikrs([...zikrs, {id:Date.now().toString(), arabic:newArabic, translation:newTranslation, fixed:false}]); setShowAddModal(false); setNewArabic(''); setNewTranslation(''); } }}><Text style={styles.doneTxt}>Save</Text></TouchableOpacity>
+//                     </View>
+//                 </View>
+//             </Modal>
+//         </SafeAreaView>
+//     );
+// }
+
+// const styles = StyleSheet.create({
+//     container: { flex: 1, backgroundColor: '#050505' },
+//     header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 10, alignItems: 'center' },
+//     headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+//     headerTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 'bold', letterSpacing: 2 },
+//     iconBtn: { padding: 5 },
+//     addZikrHeaderBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#10b981', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, gap: 5 },
+//     addZikrHeaderText: { color: '#050505', fontSize: 11, fontWeight: 'bold' },
+//     dropdownTrigger: { alignSelf: 'center', marginTop: 15, backgroundColor: '#0a0a0a', padding: 15, borderRadius: 20, borderWidth: 1, borderColor: '#151515', width: '90%' },
+//     dropdownLabel: { color: '#10b981', fontSize: 8, fontWeight: 'bold', opacity: 0.6, marginBottom: 4 },
+//     currentZikrRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+//     currentZikrText: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+//     currentTranslationText: { color: '#10b981', fontSize: 12, opacity: 0.7, fontStyle: 'italic' },
+//     main: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+//     circleBox: { height: 260, justifyContent: 'center', alignItems: 'center' },
+//     svg: { position: 'absolute' },
+//     lcdPanel: { width: 200, height: 100, borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
+//     lcdMain: { fontSize: 48, color: '#10b981', fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace' },
+//     targetIndicator: { position: 'absolute', bottom: 10, right: 15, flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+//     targetLabelText: { color: '#10b981', fontSize: 7, fontWeight: '900', opacity: 0.5 },
+//     targetValueText: { color: '#10b981', fontSize: 12, fontWeight: 'bold' },
+//     buttonOuterRing: { width: 180, height: 180, borderRadius: 90, backgroundColor: '#080808', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#111', marginTop: 20 },
+//     buttonCylinder: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#020202', overflow: 'hidden', justifyContent: 'center' },
+//     btn3DMain: { width: 140, height: 140, borderRadius: 70, alignSelf: 'center', zIndex: 10 },
+//     touchable: { width: '100%', height: '100%' },
+//     glassEffect: { width: '100%', height: '100%', borderRadius: 70, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' },
+//     buttonReflex: { position: 'absolute', top: 10, width: '60%', height: '20%', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 50 },
+//     buttonDepth: { position: 'absolute', bottom: 0, width: 140, height: 140, borderRadius: 70, backgroundColor: '#022c22', alignSelf: 'center', zIndex: 5 },
+//     tapLabelText: { color: 'white', fontSize: 22, fontWeight: '900', letterSpacing: 3 },
+//     footer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, paddingBottom: 40, alignItems: 'center' },
+//     bottomReset: { width: 45, height: 45, borderRadius: 22, backgroundColor: '#0a0a0a', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#222' },
+//     targetRow: { flexDirection: 'row', gap: 8 },
+//     tBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#0a0a0a' },
+//     tActive: { borderColor: '#10b981', borderWidth: 1 },
+//     tText: { color: '#444', fontWeight: 'bold', fontSize: 11 },
+//     toast: { position: 'absolute', left: 20, right: 20, backgroundColor: '#10b981', padding: 15, borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2000 },
+//     toastText: { fontWeight: 'bold', color: 'black' },
+//     resetBtnToast: { padding: 5 },
+//     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', padding: 20 },
+//     modalContent: { backgroundColor: '#0a0a0a', borderRadius: 25, padding: 20, gap: 10, borderWidth: 1, borderColor: '#181818' },
+//     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, alignItems: 'center' },
+//     modalTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+//     settingRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#111' },
+//     settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+//     settingText: { color: 'white', fontSize: 16 },
+//     listItem: { flexDirection: 'row', padding: 15, backgroundColor: '#111', borderRadius: 15, marginBottom: 10, alignItems: 'center' },
+//     listActiveItem: { borderColor: '#10b981', borderWidth: 1 },
+//     listArabic: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+//     listTranslation: { color: '#666', fontSize: 11, fontStyle: 'italic' },
+//     input: { backgroundColor: '#151515', color: 'white', padding: 15, borderRadius: 12, marginBottom: 5 },
+//     doneBtn: { backgroundColor: '#10b981', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+//     doneTxt: { fontWeight: 'bold', color: 'black' }
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
+// 1. expo-av ki jagah expo-audio use kiya
+import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronDown, Plus, RotateCcw, Settings, Smartphone, Target, Trash2, Volume2, X } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Dimensions, Modal, Platform, SafeAreaView, ScrollView,
     StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View
@@ -48,16 +390,12 @@ export default function TasbeehApp() {
     const toastY = useSharedValue(-150);
     const lcdScale = useSharedValue(1); 
     
-    const tapSoundRef = useRef<Audio.Sound | null>(null);
-    const successSoundRef = useRef<Audio.Sound | null>(null);
+    // 2. Naye tareeqe se audio load karna (Ab useRef ki zaroorat nahi)
+    const tapPlayer = useAudioPlayer(require('../../../assets/tasbeeh.mp3'));
+    const successPlayer = useAudioPlayer(require('../../../assets/success.mp3'));
 
     useEffect(() => {
         loadData();
-        loadSounds();
-        return () => { 
-            tapSoundRef.current?.unloadAsync(); 
-            successSoundRef.current?.unloadAsync();
-        };
     }, []);
 
     const loadData = async () => {
@@ -86,15 +424,6 @@ export default function TasbeehApp() {
         } catch (e) {}
     };
 
-    async function loadSounds() {
-        try {
-            const { sound: tap } = await Audio.Sound.createAsync(require('../../assets/tasbeeh.mp3'));
-            tapSoundRef.current = tap;
-            const { sound: success } = await Audio.Sound.createAsync(require('../../assets/success.mp3'));
-            successSoundRef.current = success;
-        } catch (e) { console.log("Sound Loading Error", e); }
-    }
-
     useEffect(() => {
         if (target > 0) {
             const percentage = count / target;
@@ -103,7 +432,8 @@ export default function TasbeehApp() {
             if (count === target && !isComplete) {
                 setIsComplete(true);
                 toastY.value = withSpring(60);
-                if (isSoundEnabled && successSoundRef.current) successSoundRef.current.replayAsync();
+                // 3. Audio Play karne ka naya syntax
+                if (isSoundEnabled) successPlayer.play();
                 if (isVibrationEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
         }
@@ -114,10 +444,8 @@ export default function TasbeehApp() {
         if (target > 0 && count >= target) return;
         setCount(prev => prev + 1);
         
-        // Digital LCD Animation (Pop Effect)
         lcdScale.value = withSequence(withTiming(1.15, { duration: 50 }), withSpring(1));
 
-        // Unlimited Goal Sweep Animation
         if (target === 0) {
             progress.value = withSequence(
                 withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }),
@@ -126,7 +454,12 @@ export default function TasbeehApp() {
         }
 
         if (isVibrationEnabled) Haptics.selectionAsync();
-        if (isSoundEnabled && tapSoundRef.current) tapSoundRef.current.replayAsync();
+        
+        // 4. Tap Sound play karne ka naya syntax
+        if (isSoundEnabled) {
+            tapPlayer.seekTo(0); // Har click par sound reset ho kar chale
+            tapPlayer.play();
+        }
 
         buttonTranslateY.value = withSequence(
             withTiming(12, { duration: 60 }),
@@ -210,7 +543,7 @@ export default function TasbeehApp() {
                 </View>
             </View>
 
-            {/* Modals logic same as your code */}
+            {/* Modals are kept exactly as your original code */}
             <Modal visible={showSettings} animationType="fade" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
@@ -228,7 +561,6 @@ export default function TasbeehApp() {
                 </View>
             </Modal>
 
-            {/* List and Add Zikir Modals remain the same... */}
             <Modal visible={showListModal} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { maxHeight: '75%' }]}>
@@ -257,6 +589,7 @@ export default function TasbeehApp() {
     );
 }
 
+// Styles are the same...
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#050505' },
     header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 10, alignItems: 'center' },
@@ -310,3 +643,18 @@ const styles = StyleSheet.create({
     doneBtn: { backgroundColor: '#10b981', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 10 },
     doneTxt: { fontWeight: 'bold', color: 'black' }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

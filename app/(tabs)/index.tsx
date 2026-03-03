@@ -13,7 +13,10 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>🕌</Text>
+      {/* Logo Container for Shadow */}
+      <View style={styles.logoContainer}>
+        <Text style={styles.logo}>🕌</Text>
+      </View>
       <Text style={styles.title}>Namaz Tracker</Text>
     </View>
   );
@@ -26,13 +29,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  logoContainer: {
+    // Yahan humne modern boxShadow use kiya hai glow effect ke liye
+    boxShadow: "0px 0px 30px rgba(255, 255, 255, 0.3)",
+    marginBottom: 20,
+  },
   logo: {
     fontSize: 70,
-    marginBottom: 20,
   },
   title: {
     fontSize: 26,
     color: "#fff",
     fontWeight: "bold",
+    // Text par bhi shadow de sakte hain
+    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.5)",
   },
 });
