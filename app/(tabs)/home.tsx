@@ -5,12 +5,12 @@ export default function Home() {
   const router = useRouter();
 
   const cards = [
-    { title: "🕌 Namaz Tracker", route: "/namaz" },
+    { title: "🕌 Namaz Tracker", route: "/screens/namaztracker" },
     { title: "🤲 Daily Duain", route: "/duain" },
     { title: "🕋 Hajj & Umrah Duain", route: "/hajj" },
     { title: "📚 Islamic Books", route: "/books" },
     { title: "✨ Wazifa", route: "/wazifa" },
-    { title: "📿 Tasbeeh Counter", route: "/tasbeeh" },
+    { title: "📿 Tasbeeh Counter", route: "/screens/tasbeeh" },
     { title: "🚀 More Updates Coming Soon", route: null },
   ];
 
