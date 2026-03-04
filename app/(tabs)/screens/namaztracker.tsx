@@ -1,7 +1,8 @@
 
+
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import * as Location from 'expo-location';
-// import { CheckCircle2, Circle, CircleCheck, Clock, Edit3, MapPin, Navigation, Settings2, X } from 'lucide-react-native';
+// import { CheckCircle2, Circle, CircleCheck, Clock, Edit3, MapPin, Navigation, Settings, Settings2, X } from 'lucide-react-native';
 // import React, { useEffect, useRef, useState } from 'react';
 // import { ActivityIndicator, Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 // import { Calendar } from 'react-native-calendars';
@@ -12,8 +13,18 @@
 // const defaultStatus: Record<NamazName, boolean> = { Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false };
 
 // export default function NamazFinalApp() {
+//   // --- Date Correction Helper ---
+//   const getLocalDateString = (date: Date) => {
+//     const offset = date.getTimezoneOffset();
+//     const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+//     return localDate.toISOString().split('T')[0];
+//   };
+
+//   const todayStr = getLocalDateString(new Date());
+//   // ------------------------------
+
 //   const [startDate, setStartDate] = useState<string | null>(null);
-//   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+//   const [selectedDate, setSelectedDate] = useState(todayStr); // Start with actual local today
 //   const [sect, setSect] = useState<'Hanafi' | 'Jafari'>('Hanafi');
   
 //   const [city, setCity] = useState('Lahore');
@@ -22,6 +33,7 @@
 //   const [tempCity, setTempCity] = useState('');
 //   const [tempCountry, setTempCountry] = useState('');
 //   const [loadingLoc, setLoadingLoc] = useState(false);
+//   const [islamicDate, setIslamicDate] = useState('-- -- ----');
 
 //   const [markedDates, setMarkedDates] = useState<any>({});
 //   const [dayRecords, setDayRecords] = useState<Record<NamazName, boolean>>(defaultStatus);
@@ -37,23 +49,14 @@
 //   const resetFadeAnim = useRef(new Animated.Value(0)).current;
 //   const resetScaleAnim = useRef(new Animated.Value(0.85)).current;
 
-//   const todayStr = new Date().toISOString().split('T')[0];
-
-//   // Helper for current date info
 //   const getHeaderInfo = () => {
 //     const now = new Date();
 //     const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
 //     const fullDate = now.toLocaleDateString('en-GB').replace(/\//g, '-');
-//     const islamicDate = new Intl.DateTimeFormat('en-u-ca-islamic-uma', {
-//       day: 'numeric',
-//       month: 'long',
-//       year: 'numeric'
-//     }).format(now);
-    
-//     return { dayName, fullDate, islamicDate };
+//     return { dayName, fullDate };
 //   };
 
-//   const { dayName, fullDate, islamicDate } = getHeaderInfo();
+//   const { dayName, fullDate } = getHeaderInfo();
 
 //   useEffect(() => { loadInitialData(); }, []);
 //   useEffect(() => { if (startDate) { refreshAllData(); fetchPrayerTimes(); } }, [selectedDate, sect, startDate, city]);
@@ -63,8 +66,8 @@
 //       const targetFade = showConfirm ? fadeAnim : resetFadeAnim;
 //       const targetScale = showConfirm ? scaleAnim : resetScaleAnim;
 //       Animated.parallel([
-//         Animated.timing(targetFade, { toValue: 1, duration: 250, useNativeDriver: true }),
-//         Animated.spring(targetScale, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true })
+//         Animated.timing(targetFade, { toValue: 1, duration: 250, useNativeDriver: false }),
+//         Animated.spring(targetScale, { toValue: 1, friction: 6, tension: 40, useNativeDriver: false })
 //       ]).start();
 //     }
 //   }, [showConfirm, showResetAlert]);
@@ -111,7 +114,11 @@
 //     try {
 //       const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=${method}`);
 //       const data = await res.json();
-//       if (data.code === 200) setPrayerTimes(data.data.timings);
+//       if (data.code === 200) {
+//         setPrayerTimes(data.data.timings);
+//         const hijri = data.data.date.hijri;
+//         setIslamicDate(`${hijri.day} ${hijri.month.en} ${hijri.year}`);
+//       }
 //     } catch (e) { console.error(e); }
 //   };
 
@@ -119,10 +126,11 @@
 //     if (!startDate) return;
 //     const markers: any = {};
 //     let ada = 0, days = 0;
-//     const start = new Date(startDate), end = new Date(todayStr);
+//     const start = new Date(startDate);
+//     const end = new Date(todayStr);
 
 //     for (let d = new Date(start); d <= end; d = new Date(d.setDate(d.getDate() + 1))) {
-//       const dStr = d.toISOString().split('T')[0];
+//       const dStr = getLocalDateString(d);
 //       const saved = await AsyncStorage.getItem(`status_${dStr}`);
 //       const status = saved ? JSON.parse(saved) : { ...defaultStatus };
 //       const count = Object.values(status).filter(Boolean).length;
@@ -186,7 +194,7 @@
 //   return (
 //     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
-//       {/* Completion Sweet Alert */}
+//       {/* Modals */}
 //       <Modal visible={showConfirm} transparent animationType="none">
 //         <View style={styles.modalOverlay}>
 //           <Animated.View style={[styles.sweetAlert, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
@@ -201,13 +209,12 @@
 //         </View>
 //       </Modal>
 
-//       {/* Reset Date Sweet Alert */}
 //       <Modal visible={showResetAlert} transparent animationType="none">
 //         <View style={styles.modalOverlay}>
 //           <Animated.View style={[styles.sweetAlert, { opacity: resetFadeAnim, transform: [{ scale: resetScaleAnim }] }]}>
 //             <View style={[styles.iconCircle, { backgroundColor: '#450a0a' }]}><Clock size={40} color="#ef4444" /></View>
 //             <Text style={styles.alertTitle}>RESET DATE?</Text>
-//             <Text style={styles.alertMsg}>Are you sure to change your namaz track dates? This will set a new starting point.</Text>
+//             <Text style={styles.alertMsg}>Are you sure to change your namaz track dates?</Text>
 //             <View style={styles.alertButtons}>
 //               <TouchableOpacity style={[styles.btn, styles.btnNo]} onPress={() => setShowResetAlert(false)}><Text style={styles.btnTextNo}>No</Text></TouchableOpacity>
 //               <TouchableOpacity style={[styles.btn, { backgroundColor: '#ef4444' }]} onPress={handleResetConfirm}><Text style={styles.btnTextYes}>Yes, Change</Text></TouchableOpacity>
@@ -228,12 +235,12 @@
 
 //       <View style={styles.header}>
 //         <TouchableOpacity onPress={() => { setTempCity(city); setTempCountry(country); setShowLocModal(true); }}>
-//           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><MapPin size={18} color="#10b981" /><Text style={styles.locLabel}>{city}</Text><Edit3 size={14} color="#444" /></View>
+//           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><MapPin size={18} color="#10b981" /><Text style={styles.locLabel}>{city.toUpperCase()}</Text><Edit3 size={14} color="#444" /></View>
 //           <Text style={styles.headerDayText}>{dayName}</Text>
 //           <Text style={styles.headerDateText}>{fullDate}</Text>
 //           <Text style={styles.headerIslamicText}>{islamicDate}</Text>
 //         </TouchableOpacity>
-//         <TouchableOpacity onPress={() => setSect(sect === 'Hanafi' ? 'Jafari' : 'Hanafi')} style={styles.sectBtn}><Text style={styles.sectBtnText}>{sect}</Text><Settings2 size={14} color="#10b981" /></TouchableOpacity>
+//         <TouchableOpacity onPress={() => setSect(sect === 'Hanafi' ? 'Jafari' : 'Hanafi')} style={styles.sectBtn}><Text style={sect === 'Hanafi' ? styles.sectBtnText : [styles.sectBtnText, {color: '#f59e0b'}]}>{sect}</Text><Settings2 size={14} color="#10b981" /></TouchableOpacity>
 //       </View>
 
 //       <View style={styles.statsContainer}>
@@ -249,7 +256,8 @@
 
 //         <View style={styles.calendarHeader}>
 //           <Text style={styles.calendarCardTitle}>Consistency Map</Text>
-//           <TouchableOpacity onPress={() => setShowResetAlert(true)} style={styles.gearIcon}><Settings2 size={18} color="#555" /></TouchableOpacity>
+//           {/* lucide icon */}
+//           <TouchableOpacity onPress={() => setShowResetAlert(true)} style={styles.gearIcon}><Settings size={18} color="#555" /></TouchableOpacity>
 //         </View>
 //         <Calendar 
 //           markingType="custom" 
@@ -296,9 +304,9 @@
 //   calendarLabel: { color: '#10b981', fontSize: 11, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
 //   header: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 45, marginBottom: 25, alignItems: 'flex-start' },
 //   locLabel: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-//   headerDayText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginTop: 5 },
-//   headerDateText: { color: '#fff', fontSize: 14, marginTop: 2 },
-//   headerIslamicText: { color: '#10b981', fontSize: 12, fontWeight: '600', marginTop: 2 },
+//   headerDayText: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginTop: 5 },
+//   headerDateText: { color: '#fff', fontSize: 16, marginTop: 2 },
+//   headerIslamicText: { color: '#10b981', fontSize: 14, fontWeight: '600', marginTop: 2 },
 //   sectBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0a0a0a', paddingHorizontal: 12, borderRadius: 12, height: 35, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 6 },
 //   sectBtnText: { color: '#10b981', fontWeight: 'bold', fontSize: 11 },
 //   statsContainer: { flexDirection: 'row', gap: 12, marginBottom: 20 },
@@ -374,11 +382,43 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { CheckCircle2, Circle, CircleCheck, Clock, Edit3, MapPin, Navigation, Settings2, X } from 'lucide-react-native';
+import { CheckCircle2, Circle, CircleCheck, Clock, Edit3, MapPin, Navigation, Settings, Settings2, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 
 const { width } = Dimensions.get('window');
@@ -387,7 +427,6 @@ type NamazName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
 const defaultStatus: Record<NamazName, boolean> = { Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false };
 
 export default function NamazFinalApp() {
-  // --- Date Correction Helper ---
   const getLocalDateString = (date: Date) => {
     const offset = date.getTimezoneOffset();
     const localDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -395,10 +434,8 @@ export default function NamazFinalApp() {
   };
 
   const todayStr = getLocalDateString(new Date());
-  // ------------------------------
-
   const [startDate, setStartDate] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(todayStr); // Start with actual local today
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [sect, setSect] = useState<'Hanafi' | 'Jafari'>('Hanafi');
   
   const [city, setCity] = useState('Lahore');
@@ -422,6 +459,28 @@ export default function NamazFinalApp() {
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
   const resetFadeAnim = useRef(new Animated.Value(0)).current;
   const resetScaleAnim = useRef(new Animated.Value(0.85)).current;
+
+  // --- Gear Animation Ref ---
+  const gearAnim = useRef(new Animated.Value(0)).current;
+
+  // --- Start Infinite Spin Logic ---
+  useEffect(() => {
+    const startSpin = () => {
+      gearAnim.setValue(0);
+      Animated.timing(gearAnim, {
+        toValue: 1,
+        duration: 2000, // 2 seconds (Slow & Smooth)
+        easing: Easing.in(Easing.linear), 
+        useNativeDriver: false, // Prevents bundle error
+      }).start(() => startSpin());
+    };
+    startSpin();
+  }, []);
+
+  const spin = gearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const getHeaderInfo = () => {
     const now = new Date();
@@ -568,7 +627,7 @@ export default function NamazFinalApp() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
-      {/* Modals */}
+      {/* All Modals (Unchanged) */}
       <Modal visible={showConfirm} transparent animationType="none">
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.sweetAlert, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
@@ -630,21 +689,23 @@ export default function NamazFinalApp() {
 
         <View style={styles.calendarHeader}>
           <Text style={styles.calendarCardTitle}>Consistency Map</Text>
-          <TouchableOpacity onPress={() => setShowResetAlert(true)} style={styles.gearIcon}><Settings2 size={18} color="#555" /></TouchableOpacity>
+          
+          {/* Animated Settings Icon with Static Glow Box */}
+          <TouchableOpacity onPress={() => setShowResetAlert(true)} style={styles.gearWrapper}>
+            <View style={styles.glowBox}>
+              <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                <Settings size={20} color="#10b981" />
+              </Animated.View>
+            </View>
+          </TouchableOpacity>
         </View>
+
         <Calendar 
           markingType="custom" 
           markedDates={markedDates} 
           maxDate={todayStr} 
           onDayPress={(day) => setSelectedDate(day.dateString)} 
-          theme={{ 
-            calendarBackground: 'transparent', 
-            dayTextColor: '#fff', 
-            monthTextColor: '#10b981', 
-            todayTextColor: '#10b981', 
-            arrowColor: '#10b981', 
-            textDisabledColor: 'rgba(255, 255, 255, 0.1)' 
-          }} 
+          theme={{ calendarBackground: 'transparent', dayTextColor: '#fff', monthTextColor: '#10b981', todayTextColor: '#10b981', arrowColor: '#10b981', textDisabledColor: 'rgba(255, 255, 255, 0.1)' }} 
         />
       </View>
 
@@ -680,7 +741,30 @@ const styles = StyleSheet.create({
   headerDayText: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginTop: 5 },
   headerDateText: { color: '#fff', fontSize: 16, marginTop: 2 },
   headerIslamicText: { color: '#10b981', fontSize: 14, fontWeight: '600', marginTop: 2 },
-  sectBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0a0a0a', paddingHorizontal: 12, borderRadius: 12, height: 35, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 6 },
+
+  sectBtn: { 
+  flexDirection: 'row', 
+  alignItems: 'center', 
+  backgroundColor: '#0a0a0a', 
+  paddingHorizontal: 12, 
+  borderRadius: 12, 
+  height: 35, 
+  gap: 6,
+  
+  // --- Glow Logic ---
+  borderWidth: 1.5,
+  // Border ko bhi green rakhein taake glow natural lage
+  borderColor: '#10b981', 
+  
+  // Neon Glow for iOS
+  shadowColor: '#10b981',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.9, // Thora zyada kar diya taake nazar aaye
+  shadowRadius: 10,
+  
+  // Neon Glow for Android
+  elevation: 12, 
+},
   sectBtnText: { color: '#10b981', fontWeight: 'bold', fontSize: 11 },
   statsContainer: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   statCard: { flex: 1, backgroundColor: '#0a0a0a', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
@@ -691,11 +775,31 @@ const styles = StyleSheet.create({
   trackingDateValue: { color: '#ffffff', fontSize: 16, fontWeight: 'bold', marginTop: 2 },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, paddingTop: 10 },
   calendarCardTitle: { color: '#444', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-  gearIcon: { padding: 5 },
+  
+  // --- Glow Box Style ---
+  gearWrapper: { padding: 5 },
+  glowBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#0a0a0a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#10b981',
+    // Neon Glow for iOS
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    // Neon Glow for Android
+    elevation: 10,
+  },
+
   detailContainer: { padding: 20, backgroundColor: '#050505', borderRadius: 25, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', minHeight: 350 },
   detailHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   detailHeader: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  dateLabel: { color: '#10b981', fontSize: 10, fontWeight: 'bold' },
+  dateLabel: { color: '#10b981', fontSize: 15, fontWeight: 'bold' },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#111' },
   rowLeft: { flexDirection: 'row', alignItems: 'center' },
   timeIcon: { padding: 8, borderRadius: 12 },
