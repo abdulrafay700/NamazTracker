@@ -424,4 +424,6 @@ const styles = StyleSheet.create({
   cardText: { fontSize: 15, fontWeight: "700", color: "#ffffff", textAlign: "center" },
   soonCard: { backgroundColor: "#064e3b", padding: 18, borderRadius: 20, marginTop: 10, alignItems: "center", borderWidth: 1, borderColor: "#10b981" },
   soonText: { color: "#ffffff", fontSize: 14, fontWeight: "600" },
+
 });
+
