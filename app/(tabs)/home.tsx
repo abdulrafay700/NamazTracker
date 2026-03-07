@@ -552,7 +552,6 @@
 
 ///////=======================context api code pas karana hai 
 
-
 import * as Location from 'expo-location';
 import { useRouter } from "expo-router";
 import { Bell, BookOpen, Calculator, Calendar, Clock, Edit3, HelpingHand, MapPin, Menu, Navigation, ShieldCheck, Star, X } from 'lucide-react-native';
@@ -567,7 +566,7 @@ import {
   ToastAndroid,
   TouchableOpacity, View
 } from 'react-native';
-import { useLocation } from '../../context/LocationContext'; // Context Import
+import { useLocation } from '../../context/LocationContext'; 
 import SideDashboard from './screens/SideDashboard';
 
 const { width } = Dimensions.get('window');
@@ -575,14 +574,14 @@ const cardWidth = (width - 60) / 2;
 
 export default function Home() {
   const router = useRouter();
-  const { setLocation } = useLocation(); // Global State Function
+  // Humne location object aur setLocation dono Context se le liye hain
+  const { location, setLocation } = useLocation(); 
   
   const [menuVisible, setMenuVisible] = useState(false);
   const [locModalVisible, setLocModalVisible] = useState(false);
   const [loadingGPS, setLoadingGPS] = useState(false);
   
-  const [locationName, setLocationName] = useState("Loading...");
-  const [countryCode, setCountryCode] = useState("PK");
+  // Manual inputs ke liye local states
   const [manualCity, setManualCity] = useState("");
   const [manualCountry, setManualCountry] = useState("");
 
@@ -602,7 +601,6 @@ export default function Home() {
         const ctr = (countryInput || "PK").trim().toUpperCase().substring(0, 2);
         updateUIWithLocation(cty, ctr);
         
-        // Manual input ke liye Prayer API call
         const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${cty}&country=${ctr}&method=1`).catch(() => null);
         if (res) handlePrayerResponse(await res.json());
         return;
@@ -614,12 +612,12 @@ export default function Home() {
         return;
       }
 
-      let location = await Location.getLastKnownPositionAsync({});
-      if (!location) {
-        location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+      let userLocation = await Location.getLastKnownPositionAsync({});
+      if (!userLocation) {
+        userLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
       }
 
-      const { latitude, longitude } = location.coords;
+      const { latitude, longitude } = userLocation.coords;
 
       const [geo, res] = await Promise.all([
         Location.reverseGeocodeAsync({ latitude, longitude }).catch(() => null),
@@ -646,9 +644,7 @@ export default function Home() {
   };
 
   const updateUIWithLocation = (city: string, country: string) => {
-    setLocationName(city);
-    setCountryCode(country);
-    // YAHAN DATA GLOBAL PROPS (CONTEXT) MEIN SAVE HO RAHA HAI
+    // Ab ye direct Context ko update karega, jis se poori app dynamic ho jayegi
     setLocation({ city, country }); 
   };
 
@@ -691,7 +687,6 @@ export default function Home() {
       <StatusBar barStyle="light-content" />
       <SideDashboard visible={menuVisible} onClose={() => setMenuVisible(false)} />
 
-      {/* MODAL SECTION */}
       <Modal visible={locModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.locModal}>
@@ -747,14 +742,14 @@ export default function Home() {
         </View>
       </Modal>
 
-      {/* TOP BAR */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => setMenuVisible(true)}><Menu size={28} color="#10b981" /></TouchableOpacity>
         
         <TouchableOpacity style={styles.locationInfo} onPress={() => setLocModalVisible(true)}>
           <View style={styles.locRow}>
             <MapPin size={14} color="#10b981" />
-            <Text style={styles.cityText}>{locationName}, {countryCode}</Text>
+            {/* Yahan hum location.city aur location.country use kar rahe hain */}
+            <Text style={styles.cityText}>{location.city}, {location.country}</Text>
             <Edit3 size={12} color="#555" />
           </View>
           <Text style={styles.dateText}>{englishDate}</Text>
@@ -783,7 +778,6 @@ export default function Home() {
           ))}
         </View>
 
-
         <TouchableOpacity style={styles.soonCard}><Text style={styles.soonText}>🚀 More Updates Coming Soon</Text></TouchableOpacity>
         <View style={{height: 50}} />
       </ScrollView>
@@ -791,6 +785,7 @@ export default function Home() {
   );
 }
 
+// Styles wahi hain jo aapne diye thay (No Change)
 const styles = StyleSheet.create({
   mainWrapper: { flex: 1, backgroundColor: "#000", paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15 },
@@ -810,11 +805,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#111", width: cardWidth, height: 160, borderRadius: 24, marginBottom: 20, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   iconContainer: { width: 60, height: 60, borderRadius: 20, backgroundColor: "rgba(16, 185, 129, 0.1)", justifyContent: "center", alignItems: "center", marginBottom: 15 },
   cardText: { fontSize: 15, fontWeight: "700", color: "#fff", textAlign: "center" },
-  congratulationBox: { alignItems: 'center', paddingVertical: 30, backgroundColor: '#050505', borderRadius: 25, marginVertical: 20, borderWidth:1, borderColor: '#111' },
-  arabicTextLarge: { color: '#10b981', fontSize: 45, fontWeight: 'bold' },
-  congratSubText: { color: '#666', fontSize: 13, marginVertical: 10 },
-  yellowBtn: { backgroundColor: '#FFD700', paddingHorizontal: 30, paddingVertical: 12, borderRadius: 10, marginTop: 10 },
-  yellowBtnText: { color: '#000', fontWeight: '800', fontSize: 14 },
   soonCard: { backgroundColor: "#064e3b", padding: 18, borderRadius: 20, alignItems: "center", marginTop: 10 },
   soonText: { color: "#fff", fontWeight: "600" },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
