@@ -1,3 +1,4 @@
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
@@ -36,6 +37,15 @@ export default function SideDashboard({ visible, onClose }: SideDashboardProps) 
     scopes: ['profile', 'email'],
     redirectUri
   });
+
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '43455085448-fd6imojkj...apps.googleusercontent.com', // Jo aapne image mein dikhayi thi
+      offlineAccess: true,
+      
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
