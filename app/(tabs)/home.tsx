@@ -563,10 +563,9 @@ import {
   Platform, StatusBar as RNStatusBar, SafeAreaView, ScrollView,
   StatusBar, StyleSheet, Text,
   TextInput,
-  ToastAndroid,
   TouchableOpacity, View
 } from 'react-native';
-import { useLocation } from '../../context/LocationContext'; 
+import { useLocation } from '../../context/LocationContext';
 import SideDashboard from './screens/SideDashboard';
 
 const { width } = Dimensions.get('window');
@@ -593,56 +592,106 @@ export default function Home() {
     fetchLocationData();
   }, []);
 
+  // const fetchLocationData = async (cityInput?: string, countryInput?: string) => {
+  //   setLoadingGPS(true);
+  //   try {
+  //     if (cityInput) {
+  //       const cty = cityInput.trim().toUpperCase();
+  //       const ctr = (countryInput || "PK").trim().toUpperCase().substring(0, 2);
+  //       updateUIWithLocation(cty, ctr);
+        
+  //       const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${cty}&country=${ctr}&method=1`).catch(() => null);
+  //       if (res) handlePrayerResponse(await res.json());
+  //       return;
+  //     }
+
+  //     let { status } = await Location.requestForegroundPermissionsAsync();
+  //     if (status !== 'granted') {
+  //       updateUIWithLocation("KARACHI", "PK");
+  //       return;
+  //     }
+
+  //     let userLocation = await Location.getLastKnownPositionAsync({});
+  //     if (!userLocation) {
+  //       userLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+  //     }
+
+  //     const { latitude, longitude } = userLocation.coords;
+
+  //     const [geo, res] = await Promise.all([
+  //       Location.reverseGeocodeAsync({ latitude, longitude }).catch(() => null),
+  //       fetch(`https://api.aladhan.com/v1/timingsByAddress?address=${latitude},${longitude}&method=1`).catch(() => null)
+  //     ]);
+
+  //     if (geo && geo.length > 0) {
+  //       const detectedCity = geo[0].city || geo[0].region || "KARACHI";
+  //       const detectedCountry = geo[0].isoCountryCode || "PK";
+  //       updateUIWithLocation(detectedCity.toUpperCase(), detectedCountry.toUpperCase().substring(0, 2));
+  //     }
+
+  //     if (res) {
+  //       const data = await res.json();
+  //       handlePrayerResponse(data);
+  //     }
+
+  //   } catch (error) {
+  //     if (Platform.OS === 'android') ToastAndroid.show("Connection Error", ToastAndroid.SHORT);
+  //     updateUIWithLocation("OFFLINE", "PK");
+  //   } finally {
+  //     setLoadingGPS(false);
+  //   }
+  // };
+
   const fetchLocationData = async (cityInput?: string, countryInput?: string) => {
     setLoadingGPS(true);
     try {
+      // 1. Agar manual input hai to foran chalao
       if (cityInput) {
-        const cty = cityInput.trim().toUpperCase();
-        const ctr = (countryInput || "PK").trim().toUpperCase().substring(0, 2);
-        updateUIWithLocation(cty, ctr);
-        
-        const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${cty}&country=${ctr}&method=1`).catch(() => null);
-        if (res) handlePrayerResponse(await res.json());
+        updateUIWithLocation(cityInput.trim().toUpperCase(), (countryInput || "PK").toUpperCase());
         return;
       }
 
+      // 2. Permission check
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         updateUIWithLocation("KARACHI", "PK");
         return;
       }
 
-      let userLocation = await Location.getLastKnownPositionAsync({});
-      if (!userLocation) {
-        userLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+      // 3. TEZ tareeka: Pehle aakhri maloom location uthao (Boht Fast hai)
+      let location = await Location.getLastKnownPositionAsync({});
+      
+      // Agar aakhri location nahi mili, tab naye siray se dhoondo (lekin kam accuracy ke sath)
+      if (!location) {
+        location = await Location.getCurrentPositionAsync({ 
+          accuracy: Location.Accuracy.Low, // Accuracy kam rakhi taake speed barhe
+        });
       }
 
-      const { latitude, longitude } = userLocation.coords;
-
-      const [geo, res] = await Promise.all([
-        Location.reverseGeocodeAsync({ latitude, longitude }).catch(() => null),
-        fetch(`https://api.aladhan.com/v1/timingsByAddress?address=${latitude},${longitude}&method=1`).catch(() => null)
+      const { latitude, longitude } = location.coords;
+      
+      // Reverse Geocode aur API call (Dono ko saath chalao)
+      const [geo] = await Promise.all([
+        Location.reverseGeocodeAsync({ latitude, longitude }).catch(() => null)
       ]);
 
       if (geo && geo.length > 0) {
         const detectedCity = geo[0].city || geo[0].region || "KARACHI";
         const detectedCountry = geo[0].isoCountryCode || "PK";
-        updateUIWithLocation(detectedCity.toUpperCase(), detectedCountry.toUpperCase().substring(0, 2));
+        updateUIWithLocation(detectedCity.toUpperCase(), detectedCountry.toUpperCase());
       }
-
-      if (res) {
-        const data = await res.json();
-        handlePrayerResponse(data);
-      }
+      
+      // Prayer Times fetch (Address ke bajaye latitude/longitude se fetch karna fast hai)
+      const res = await fetch(`https://api.aladhan.com/v1/timingsByAddress?address=${latitude},${longitude}&method=1`);
+      const data = await res.json();
+      handlePrayerResponse(data);
 
     } catch (error) {
-      if (Platform.OS === 'android') ToastAndroid.show("Connection Error", ToastAndroid.SHORT);
-      updateUIWithLocation("OFFLINE", "PK");
+      console.log("Location Error:", error);
     } finally {
       setLoadingGPS(false);
     }
-  };
-
+};
   const updateUIWithLocation = (city: string, country: string) => {
     // Ab ye direct Context ko update karega, jis se poori app dynamic ho jayegi
     setLocation({ city, country }); 
