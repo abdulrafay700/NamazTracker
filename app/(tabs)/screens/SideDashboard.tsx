@@ -1,20 +1,19 @@
-
-
-
-// -------------------working code---------------------------------------------------------
-
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut } from 'firebase/auth';
-import { LayoutDashboard, LogIn, LogOut, Mail, Palette, ShieldCheck, User, X } from 'lucide-react-native';
+import {
+  CheckCircle2,
+  CloudOff,
+  LayoutDashboard, LogIn, LogOut, Mail, Palette,
+  ShieldCheck, User, X
+} from 'lucide-react-native'; // ✨ Icons add kiye
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { auth } from '../../../firebaseConfig';
 
 const { width } = Dimensions.get('window');
 
-// ✨ Zaroori: Window auto-close handling ke liye
 WebBrowser.maybeCompleteAuthSession();
 
 interface SideDashboardProps {
@@ -26,22 +25,18 @@ export default function SideDashboard({ visible, onClose }: SideDashboardProps) 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Redirect URI auto-detect karega (exp:// ya http://)
   const redirectUri = AuthSession.makeRedirectUri({
     path: 'auth'
   });
 
-  // ✅ Google Request Config
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: "43455085448-mnltjis4q517g1qm0gajimf1i5rtt4jq.apps.googleusercontent.com",
     webClientId: "43455085448-fd6imojkjtduu7cvbapjd7nce2cetb7b.apps.googleusercontent.com",
-    iosClientId: "YOUR_IOS_CLIENT_ID_IF_NEEDED", // Agar iOS hai toh add karein
-    responseType: "id_token", // ✨ Isse token milna confirm ho jata hai
+    responseType: "id_token",
     scopes: ['profile', 'email'],
     redirectUri
   });
 
-  // ✅ Firebase Auth Listener (Persistence Check)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -49,41 +44,32 @@ export default function SideDashboard({ visible, onClose }: SideDashboardProps) 
     return unsubscribe;
   }, []);
 
-  // ✅ Google Response Logic
   useEffect(() => {
     const loginToFirebase = async () => {
       if (response?.type === 'success') {
-        // Params ya authentication object se token nikalna
         const { id_token } = response.params;
         const finalToken = id_token || response.authentication?.idToken;
 
-        if (!finalToken) {
-          console.log("Token not found in response");
-          return;
-        }
+        if (!finalToken) return;
 
         setLoading(true);
         try {
           const credential = GoogleAuthProvider.credential(finalToken);
           const result = await signInWithCredential(auth, credential);
-          
           const userName = result.user.displayName || "User";
           Alert.alert("MashAllah ✨", `Assalam-u-Alaikum ${userName}!`, [
             { text: "Shuru Karein", onPress: () => onClose() }
           ]);
         } catch (error: any) {
-          console.error("Firebase Login Error:", error);
           Alert.alert("Login Failed", "Firebase connection failed.");
         } finally {
           setLoading(false);
         }
       }
     };
-
     loginToFirebase();
   }, [response]);
 
-  // ✅ Logout Function
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -109,6 +95,20 @@ export default function SideDashboard({ visible, onClose }: SideDashboardProps) 
               )}
             </View>
             <Text style={styles.username}>{user ? user.displayName : "Guest User"}</Text>
+            
+            {/* ✨ SYNC INDICATOR LOGIC */}
+            {!user ? (
+              <View style={styles.syncBoxWarning}>
+                <CloudOff size={14} color="#ff9900" />
+                <Text style={styles.syncTextWarning}>Not Synced. Login to save data.</Text>
+              </View>
+            ) : (
+              <View style={styles.syncBoxSuccess}>
+                <CheckCircle2 size={14} color="#10b981" />
+                <Text style={styles.syncTextSuccess}>Data Synced to Cloud</Text>
+              </View>
+            )}
+
             <View style={styles.statusRow}>
                <View style={[styles.dot, { backgroundColor: user ? '#10b981' : '#ef4444' }]} />
                <Text style={styles.statusText}>{user ? "Online Mode" : "Offline Mode"}</Text>
@@ -117,20 +117,25 @@ export default function SideDashboard({ visible, onClose }: SideDashboardProps) 
 
           <View style={styles.divider} />
 
-          {/* LOGIN / LOGOUT BUTTON */}
           {loading ? (
             <ActivityIndicator size="large" color="#10b981" style={{ marginVertical: 20 }} />
           ) : (
             <>
               {!user ? (
-                <TouchableOpacity 
-                  style={styles.menuItem} 
-                  onPress={() => promptAsync()} 
-                  disabled={!request}
-                >
-                  <LogIn size={22} color="#10b981" />
-                  <Text style={styles.menuText}>Login with Google</Text>
-                </TouchableOpacity>
+                <View>
+                  <TouchableOpacity 
+                    style={styles.menuItem} 
+                    onPress={() => promptAsync()} 
+                    disabled={!request}
+                  >
+                    <LogIn size={22} color="#10b981" />
+                    <Text style={styles.menuText}>Login with Google</Text>
+                  </TouchableOpacity>
+                  {/* ✨ TRUST MESSAGE UNDER LOGIN */}
+                  <Text style={styles.trustMessage}>
+                    🔒 Login to keep your Tasbeeh & Prayer records safe.
+                  </Text>
+                </View>
               ) : (
                 <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                   <LogOut size={22} color="#ef4444" />
@@ -146,7 +151,6 @@ export default function SideDashboard({ visible, onClose }: SideDashboardProps) 
           <TouchableOpacity style={styles.menuItem}><Palette size={22} color="#10b981" /><Text style={styles.menuText}>Neon Theme Settings</Text></TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}><LayoutDashboard size={22} color="#10b981" /><Text style={styles.menuText}>Tasbeeh Dashboard</Text></TouchableOpacity>
 
-          {/* CLOSE BUTTON */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <X size={24} color="#ef4444" />
             <Text style={styles.closeBtnText}>Close Menu</Text>
@@ -166,7 +170,15 @@ const styles = StyleSheet.create({
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#111', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#10b981', overflow: 'hidden' },
   profilePic: { width: '100%', height: '100%' },
   username: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginTop: 15 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
+  
+  // ✨ NEW STYLES FOR SYNC INDICATORS
+  syncBoxWarning: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255, 153, 0, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginTop: 8, borderWidth: 0.5, borderColor: '#ff9900' },
+  syncTextWarning: { color: '#ff9900', fontSize: 10, fontWeight: '600' },
+  syncBoxSuccess: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  syncTextSuccess: { color: '#10b981', fontSize: 10, fontWeight: '600' },
+  trustMessage: { color: '#666', fontSize: 10, textAlign: 'center', marginTop: -10, marginBottom: 10, paddingHorizontal: 10 },
+
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 12, fontWeight: '600', color: '#10b981' },
   divider: { height: 1, backgroundColor: '#222', marginVertical: 20 },

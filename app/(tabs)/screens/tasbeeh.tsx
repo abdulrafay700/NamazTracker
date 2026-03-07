@@ -1,10 +1,12 @@
+// --------------------------------------------------with complete perfect ui---------------------------------------------
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { Audio } from 'expo-av';
+// // 1. expo-av ki jagah expo-audio use kiya
+// import { useAudioPlayer } from 'expo-audio';
 // import * as Haptics from 'expo-haptics';
 // import { LinearGradient } from 'expo-linear-gradient';
 // import { ChevronDown, Plus, RotateCcw, Settings, Smartphone, Target, Trash2, Volume2, X } from 'lucide-react-native';
-// import React, { useEffect, useRef, useState } from 'react';
+// import React, { useEffect, useState } from 'react';
 // import {
 //     Dimensions, Modal, Platform, SafeAreaView, ScrollView,
 //     StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View
@@ -15,6 +17,8 @@
 //     withSequence, withSpring, withTiming
 // } from 'react-native-reanimated';
 // import Svg, { Circle } from 'react-native-svg';
+// 4
+
 
 // const { width } = Dimensions.get('window');
 // const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -48,16 +52,12 @@
 //     const toastY = useSharedValue(-150);
 //     const lcdScale = useSharedValue(1); 
     
-//     const tapSoundRef = useRef<Audio.Sound | null>(null);
-//     const successSoundRef = useRef<Audio.Sound | null>(null);
+//     // 2. Naye tareeqe se audio load karna (Ab useRef ki zaroorat nahi)
+//     const tapPlayer = useAudioPlayer(require('../../../assets/tasbeeh.mp3'));
+//     const successPlayer = useAudioPlayer(require('../../../assets/success.mp3'));
 
 //     useEffect(() => {
 //         loadData();
-//         loadSounds();
-//         return () => { 
-//             tapSoundRef.current?.unloadAsync(); 
-//             successSoundRef.current?.unloadAsync();
-//         };
 //     }, []);
 
 //     const loadData = async () => {
@@ -86,15 +86,6 @@
 //         } catch (e) {}
 //     };
 
-//     async function loadSounds() {
-//         try {
-//             const { sound: tap } = await Audio.Sound.createAsync(require('../../../assets/tasbeeh.mp3'));
-//             tapSoundRef.current = tap;
-//             const { sound: success } = await Audio.Sound.createAsync(require('../../../assets/success.mp3'));
-//             successSoundRef.current = success;
-//         } catch (e) { console.log("Sound Loading Error", e); }
-//     }
-
 //     useEffect(() => {
 //         if (target > 0) {
 //             const percentage = count / target;
@@ -103,7 +94,8 @@
 //             if (count === target && !isComplete) {
 //                 setIsComplete(true);
 //                 toastY.value = withSpring(60);
-//                 if (isSoundEnabled && successSoundRef.current) successSoundRef.current.replayAsync();
+//                 // 3. Audio Play karne ka naya syntax
+//                 if (isSoundEnabled) successPlayer.play();
 //                 if (isVibrationEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 //             }
 //         }
@@ -114,10 +106,8 @@
 //         if (target > 0 && count >= target) return;
 //         setCount(prev => prev + 1);
         
-//         // Digital LCD Animation (Pop Effect)
 //         lcdScale.value = withSequence(withTiming(1.15, { duration: 50 }), withSpring(1));
 
-//         // Unlimited Goal Sweep Animation
 //         if (target === 0) {
 //             progress.value = withSequence(
 //                 withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }),
@@ -126,7 +116,12 @@
 //         }
 
 //         if (isVibrationEnabled) Haptics.selectionAsync();
-//         if (isSoundEnabled && tapSoundRef.current) tapSoundRef.current.replayAsync();
+        
+//         // 4. Tap Sound play karne ka naya syntax
+//         if (isSoundEnabled) {
+//             tapPlayer.seekTo(0); // Har click par sound reset ho kar chale
+//             tapPlayer.play();
+//         }
 
 //         buttonTranslateY.value = withSequence(
 //             withTiming(12, { duration: 60 }),
@@ -210,7 +205,7 @@
 //                 </View>
 //             </View>
 
-//             {/* Modals logic same as your code */}
+//             {/* Modals are kept exactly as your original code */}
 //             <Modal visible={showSettings} animationType="fade" transparent>
 //                 <View style={styles.modalOverlay}>
 //                     <View style={styles.modalContent}>
@@ -228,7 +223,6 @@
 //                 </View>
 //             </Modal>
 
-//             {/* List and Add Zikir Modals remain the same... */}
 //             <Modal visible={showListModal} animationType="slide" transparent>
 //                 <View style={styles.modalOverlay}>
 //                     <View style={[styles.modalContent, { maxHeight: '75%' }]}>
@@ -257,6 +251,7 @@
 //     );
 // }
 
+// // Styles are the same...
 // const styles = StyleSheet.create({
 //     container: { flex: 1, backgroundColor: '#050505' },
 //     header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 10, alignItems: 'center' },
@@ -314,56 +309,44 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-// 1. expo-av ki jagah expo-audio use kiya
+// =======================================perfect ui end=============================================================================
 import { useAudioPlayer } from 'expo-audio';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronDown, Plus, RotateCcw, Settings, Smartphone, Target, Trash2, Volume2, X } from 'lucide-react-native';
+import { CheckCircle2, ChevronDown, Plus, RotateCcw, Settings, Smartphone, Target, Trash2, Volume2, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
     Dimensions, Modal, Platform, SafeAreaView, ScrollView,
     StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import Animated, {
-    Easing,
-    useAnimatedProps, useAnimatedStyle, useSharedValue,
+    FadeInUp, FadeOutUp, useAnimatedProps, useAnimatedStyle, useSharedValue,
     withSequence, withSpring, withTiming
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
+
+// Backend & Firebase Imports
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { listenToZikrChanges, syncZikrToCloud } from '../../../_Backend/tasbeehbackend';
+import { auth, db } from '../../../firebaseConfig';
+import ZikrManager from '../ZikrManager';
 
 const { width } = Dimensions.get('window');
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const CIRCLE_LENGTH = 750; 
 const R = 110; 
 
-const INITIAL_ZIKRS = [
+// --- 1. Interface (TypeScript Error Fix) ---
+interface Zikr {
+    id: string;
+    arabic: string;
+    translation?: string;
+    transliteration?: string;
+    fixed?: boolean;
+}
+
+const INITIAL_ZIKRS: Zikr[] = [
     { id: '1', arabic: "سُبْحَانَ ٱللَّٰهِ", translation: "Glory be to Allah", fixed: true },
     { id: '2', arabic: "ٱلْحَمْدُ لِلَّٰهِ", translation: "Praise be to Allah", fixed: true },
     { id: '3', arabic: "اللهُ أَكْبَرُ", translation: "Allah is the Greatest", fixed: true },
@@ -371,100 +354,106 @@ const INITIAL_ZIKRS = [
 ];
 
 export default function TasbeehApp() {
-    const [zikrs, setZikrs] = useState(INITIAL_ZIKRS);
+    // States
+    const [zikrs, setZikrs] = useState<Zikr[]>(INITIAL_ZIKRS);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [count, setCount] = useState(0);
     const [target, setTarget] = useState(33);
     const [isComplete, setIsComplete] = useState(false);
+    const [showSyncToast, setShowSyncToast] = useState(false);
+    
+    // UI Modals
     const [isSoundEnabled, setIsSoundEnabled] = useState(true);
     const [isVibrationEnabled, setIsVibrationEnabled] = useState(true);
-    
     const [showAddModal, setShowAddModal] = useState(false);
     const [showListModal, setShowListModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [newArabic, setNewArabic] = useState('');
-    const [newTranslation, setNewTranslation] = useState('');
+    const [showGoalModal, setShowGoalModal] = useState(false);
+    const [customGoal, setCustomGoal] = useState('');
 
+    // Shared Values for Animation
     const progress = useSharedValue(0);
     const buttonTranslateY = useSharedValue(0); 
     const toastY = useSharedValue(-150);
     const lcdScale = useSharedValue(1); 
     
-    // 2. Naye tareeqe se audio load karna (Ab useRef ki zaroorat nahi)
+    // Audio
     const tapPlayer = useAudioPlayer(require('../../../assets/tasbeeh.mp3'));
     const successPlayer = useAudioPlayer(require('../../../assets/success.mp3'));
 
+    const currentZikr = zikrs[currentIndex] || INITIAL_ZIKRS[0];
+
+    // --- 2. LOAD EVERYTHING FROM CLOUD (REFRESH FIX) ---
     useEffect(() => {
-        loadData();
-    }, []);
+        const loadFromCloud = async () => {
+            if (!auth.currentUser) return;
+            try {
+                // Fetch Custom Zikrs
+                const snap = await getDocs(collection(db, 'users', auth.currentUser.uid, 'zikrs'));
+                const cloudList: Zikr[] = [];
+                snap.forEach(d => cloudList.push(d.data() as Zikr));
+                const fullList = [...INITIAL_ZIKRS, ...cloudList];
+                setZikrs(fullList);
 
-    const loadData = async () => {
-        try {
-            const savedCount = await AsyncStorage.getItem('tasbeeh_count');
-            const savedZikrs = await AsyncStorage.getItem('tasbeeh_zikrs');
-            const savedSettings = await AsyncStorage.getItem('tasbeeh_settings');
-            if (savedCount) setCount(parseInt(savedCount));
-            if (savedZikrs) {
-                const parsed = JSON.parse(savedZikrs);
-                setZikrs([...INITIAL_ZIKRS, ...parsed.filter((z: any) => !z.fixed)]);
-            }
-            if (savedSettings) {
-                const { sound, vibe } = JSON.parse(savedSettings);
-                setIsSoundEnabled(sound ?? true); 
-                setIsVibrationEnabled(vibe ?? true);
-            }
-        } catch (e) {}
-    };
+                // Fetch Last Session (Where did user leave?)
+                const session = await getDoc(doc(db, 'users', auth.currentUser.uid, 'settings', 'lastSession'));
+                if (session.exists()) {
+                    const data = session.data();
+                    setTarget(data.lastTarget || 33);
+                    const idx = fullList.findIndex(z => z.id === data.lastZikrId);
+                    if (idx !== -1) setCurrentIndex(idx);
+                }
+            } catch (e) { console.log("Init Error", e); }
+        };
+        loadFromCloud();
+    }, [auth.currentUser]);
 
-    const saveData = async () => {
-        try {
-            await AsyncStorage.setItem('tasbeeh_count', count.toString());
-            await AsyncStorage.setItem('tasbeeh_zikrs', JSON.stringify(zikrs.filter(z => !z.fixed)));
-            await AsyncStorage.setItem('tasbeeh_settings', JSON.stringify({ sound: isSoundEnabled, vibe: isVibrationEnabled }));
-        } catch (e) {}
-    };
-
+    // --- 3. REAL-TIME COUNT SYNC ---
     useEffect(() => {
-        if (target > 0) {
-            const percentage = count / target;
-            progress.value = withSpring(percentage, { damping: 15, stiffness: 120 });
-
-            if (count === target && !isComplete) {
-                setIsComplete(true);
-                toastY.value = withSpring(60);
-                // 3. Audio Play karne ka naya syntax
-                if (isSoundEnabled) successPlayer.play();
-                if (isVibrationEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
+        let unsubscribe: any;
+        if (auth.currentUser && currentZikr) {
+            unsubscribe = listenToZikrChanges(currentZikr.id, (cloudCount) => {
+                if (cloudCount !== count) setCount(cloudCount);
+            });
         }
-        saveData();
-    }, [count, target]);
+        return () => unsubscribe && unsubscribe();
+    }, [currentIndex, auth.currentUser]);
 
+    // --- 4. SESSION UPDATE (DUSRI DEVICE KE LIYE) ---
+    const updateSession = async (zikrId: string, tVal: number) => {
+        if (auth.currentUser) {
+            await setDoc(doc(db, 'users', auth.currentUser.uid, 'settings', 'lastSession'), {
+                lastZikrId: zikrId,
+                lastTarget: tVal
+            }, { merge: true });
+        }
+    };
+
+    // --- 5. DELETE ZIKR (TASBEEH SCREEN SE) ---
+    const handleDeleteZikr = async (id: string) => {
+        if (!auth.currentUser) return;
+        try {
+            await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'zikrs', id));
+            const filtered = zikrs.filter(z => z.id !== id);
+            setZikrs(filtered);
+            if (currentZikr.id === id) {
+                setCurrentIndex(0);
+                setCount(0);
+            }
+        } catch (e) { console.log("Delete Error", e); }
+    };
+
+    // --- HANDLERS ---
     const handlePress = () => {
         if (target > 0 && count >= target) return;
-        setCount(prev => prev + 1);
+        const nextCount = count + 1;
+        setCount(nextCount);
+        if (auth.currentUser) syncZikrToCloud(currentZikr.id, nextCount, currentZikr.arabic);
         
         lcdScale.value = withSequence(withTiming(1.15, { duration: 50 }), withSpring(1));
-
-        if (target === 0) {
-            progress.value = withSequence(
-                withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }),
-                withTiming(0, { duration: 0 })
-            );
-        }
-
-        if (isVibrationEnabled) Haptics.selectionAsync();
-        
-        // 4. Tap Sound play karne ka naya syntax
-        if (isSoundEnabled) {
-            tapPlayer.seekTo(0); // Har click par sound reset ho kar chale
-            tapPlayer.play();
-        }
-
-        buttonTranslateY.value = withSequence(
-            withTiming(12, { duration: 60 }),
-            withSpring(0, { damping: 10, stiffness: 200 })
-        );
+        if (isVibrationEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (isSoundEnabled) { tapPlayer.seekTo(0); tapPlayer.play(); }
+        buttonTranslateY.value = withSequence(withTiming(12, { duration: 60 }), withSpring(0));
     };
 
     const handleReset = () => {
@@ -472,38 +461,81 @@ export default function TasbeehApp() {
         setIsComplete(false);
         toastY.value = withSpring(-150);
         progress.value = withTiming(0);
+        if (auth.currentUser) syncZikrToCloud(currentZikr.id, 0, currentZikr.arabic);
+        setShowSyncToast(true);
+        setTimeout(() => setShowSyncToast(false), 1500);
     };
 
+    const updateTarget = (val: number) => {
+        setTarget(val);
+        handleReset();
+        updateSession(currentZikr.id, val);
+    };
+
+    // Update session when zikr/target changes
+    useEffect(() => {
+        if (currentZikr) updateSession(currentZikr.id, target);
+    }, [currentIndex, target]);
+
+    // Progress Logic
+    useEffect(() => {
+        if (target > 0) {
+            progress.value = withSpring(count / target);
+            if (count === target && !isComplete) {
+                setIsComplete(true);
+                toastY.value = withSpring(60);
+                if (isSoundEnabled) successPlayer.play();
+                if (isVibrationEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+        } else { progress.value = withTiming(0); }
+    }, [count, target]);
+
+    // Animation Styles
     const animatedCircleProps = useAnimatedProps(() => ({ strokeDashoffset: CIRCLE_LENGTH * (1 - progress.value) }));
     const animatedButtonStyle = useAnimatedStyle(() => ({ transform: [{ translateY: buttonTranslateY.value }] }));
     const animatedToastStyle = useAnimatedStyle(() => ({ transform: [{ translateY: toastY.value }] }));
     const animatedLcdStyle = useAnimatedStyle(() => ({ transform: [{ scale: lcdScale.value }] }));
 
-    const currentZikr = zikrs[currentIndex] || INITIAL_ZIKRS[0];
-
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" />
 
+            {/* SYNC TOAST */}
+            {showSyncToast && (
+                <Animated.View entering={FadeInUp} exiting={FadeOutUp} style={styles.syncToast}>
+                    <BlurView intensity={60} tint="dark" style={styles.blurContent}>
+                        <CheckCircle2 size={16} color="#10b981" />
+                        <Text style={styles.syncToastText}>Cloud Synced</Text>
+                    </BlurView>
+                </Animated.View>
+            )}
+
+            {/* COMPLETION TOAST */}
             <Animated.View style={[styles.toast, animatedToastStyle]}>
                 <Text style={styles.toastText}>MashaAllah! Target Completed</Text>
                 <TouchableOpacity onPress={handleReset} style={styles.resetBtnToast}><RotateCcw size={16} color="black" /></TouchableOpacity>
             </Animated.View>
 
+            {/* HEADER */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.iconBtn}><Settings size={22} color="rgba(255,255,255,0.4)" /></TouchableOpacity>
                 <View style={styles.headerCenter}><Target size={14} color="#10b981" /><Text style={styles.headerTitle}>DHIKRFLOW</Text></View>
                 <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addZikrHeaderBtn}><Plus size={14} color="#050505" strokeWidth={3} /><Text style={styles.addZikrHeaderText}>Add Zikir</Text></TouchableOpacity>
             </View>
 
+            {/* CURRENT ZIKR TRIGGER */}
             <TouchableOpacity style={styles.dropdownTrigger} onPress={() => setShowListModal(true)}>
                 <Text style={styles.dropdownLabel}>CURRENT DHIKR</Text>
                 <View style={styles.currentZikrRow}>
-                    <View style={{ flex: 1 }}><Text style={styles.currentZikrText}>{currentZikr.arabic}</Text><Text style={styles.currentTranslationText}>{currentZikr.translation}</Text></View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.currentZikrText}>{currentZikr.arabic}</Text>
+                        <Text style={styles.currentTranslationText}>{currentZikr.translation || currentZikr.transliteration || ""}</Text>
+                    </View>
                     <ChevronDown size={18} color="#10b981" />
                 </View>
             </TouchableOpacity>
 
+            {/* MAIN COUNTER */}
             <View style={styles.main}>
                 <View style={styles.circleBox}>
                     <Svg width={width} height={260} style={styles.svg}>
@@ -518,6 +550,7 @@ export default function TasbeehApp() {
                     </LinearGradient>
                 </View>
 
+                {/* 3D TAP BUTTON */}
                 <View style={styles.buttonOuterRing}>
                     <View style={styles.buttonCylinder}>
                         <Animated.View style={[styles.btn3DMain, animatedButtonStyle]}>
@@ -532,64 +565,86 @@ export default function TasbeehApp() {
                 </View>
             </View>
 
+            {/* FOOTER */}
             <View style={styles.footer}>
                 <TouchableOpacity onPress={handleReset} style={styles.bottomReset}><RotateCcw size={22} color="white" /></TouchableOpacity>
                 <View style={styles.targetRow}>
-                    {[33, 100, 1000, 0].map(t => (
-                        <TouchableOpacity key={t} onPress={() => {setTarget(t); handleReset();}} style={[styles.tBtn, target === t && styles.tActive]}>
-                            <Text style={[styles.tText, target === t && {color: '#10b981'}]}>{t || '∞'}</Text>
+                    {[33, 100, 1000].map(t => (
+                        <TouchableOpacity key={t} onPress={() => updateTarget(t)} style={[styles.tBtn, target === t && styles.tActive]}>
+                            <Text style={[styles.tText, target === t && {color: '#10b981'}]}>{t}</Text>
                         </TouchableOpacity>
                     ))}
+                    <TouchableOpacity onPress={() => setShowGoalModal(true)} style={[styles.tBtn, ![33, 100, 1000, 0].includes(target) && styles.tActive]}>
+                        <Plus size={14} color={![33, 100, 1000, 0].includes(target) ? '#10b981' : '#444'} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => updateTarget(0)} style={[styles.tBtn, target === 0 && styles.tActive]}>
+                        <Text style={[styles.tText, target === 0 && {color: '#10b981'}]}>∞</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
-            {/* Modals are kept exactly as your original code */}
-            <Modal visible={showSettings} animationType="fade" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}><Text style={styles.modalTitle}>Settings</Text><TouchableOpacity onPress={()=>setShowSettings(false)}><X color="white" /></TouchableOpacity></View>
-                        <View style={styles.settingRow}>
-                            <View style={styles.settingLeft}><Volume2 size={18} color="#10b981"/><Text style={styles.settingText}>Sound Effect</Text></View>
-                            <Switch value={isSoundEnabled} onValueChange={setIsSoundEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
-                        </View>
-                        <View style={styles.settingRow}>
-                            <View style={styles.settingLeft}><Smartphone size={18} color="#10b981"/><Text style={styles.settingText}>Vibration</Text></View>
-                            <Switch value={isVibrationEnabled} onValueChange={setIsVibrationEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
-                        </View>
-                        <TouchableOpacity style={styles.doneBtn} onPress={() => setShowSettings(false)}><Text style={styles.doneTxt}>Close</Text></TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            {/* ZIKR MANAGER MODAL */}
+            <ZikrManager 
+                visible={showAddModal} 
+                onClose={() => setShowAddModal(false)}
+                zikrs={zikrs.filter(z => !z.fixed)}
+                onAdd={(ar, tr) => setZikrs([...zikrs, {id: Date.now().toString(), arabic: ar, transliteration: tr, fixed: false}])}
+                onDelete={handleDeleteZikr}
+            />
 
+            {/* LIST SELECTION MODAL */}
             <Modal visible={showListModal} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { maxHeight: '75%' }]}>
                         <View style={styles.modalHeader}><Text style={styles.modalTitle}>Select Zikir</Text><TouchableOpacity onPress={()=>setShowListModal(false)}><X color="white" /></TouchableOpacity></View>
                         <ScrollView>{zikrs.map((item, index) => (
                             <TouchableOpacity key={item.id} style={[styles.listItem, currentIndex === index && styles.listActiveItem]} onPress={() => { setCurrentIndex(index); setShowListModal(false); handleReset(); }}>
-                                <View style={{ flex: 1 }}><Text style={styles.listArabic}>{item.arabic}</Text><Text style={styles.listTranslation}>{item.translation}</Text></View>
-                                {!item.fixed && <TouchableOpacity onPress={() => setZikrs(zikrs.filter(z => z.id !== item.id))}><Trash2 size={18} color="#ef4444" /></TouchableOpacity>}
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.listArabic}>{item.arabic}</Text>
+                                    <Text style={styles.listTranslation}>{item.translation || item.transliteration || ""}</Text>
+                                </View>
+                                {!item.fixed && (
+                                    <TouchableOpacity onPress={() => handleDeleteZikr(item.id)}><Trash2 size={18} color="#ef4444" /></TouchableOpacity>
+                                )}
                             </TouchableOpacity>
                         ))}</ScrollView>
                     </View>
                 </View>
             </Modal>
 
-            <Modal visible={showAddModal} transparent animationType="fade">
+            {/* SETTINGS MODAL */}
+            <Modal visible={showSettings} animationType="fade" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}><Text style={styles.modalTitle}>Add Zikir</Text><TouchableOpacity onPress={()=>setShowAddModal(false)}><X color="white" /></TouchableOpacity></View>
-                        <TextInput placeholder="Arabic..." placeholderTextColor="#444" style={styles.input} value={newArabic} onChangeText={setNewArabic} />
-                        <TextInput placeholder="Translation..." placeholderTextColor="#444" style={styles.input} value={newTranslation} onChangeText={setNewTranslation} />
-                        <TouchableOpacity style={styles.doneBtn} onPress={() => { if(newArabic){ setZikrs([...zikrs, {id:Date.now().toString(), arabic:newArabic, translation:newTranslation, fixed:false}]); setShowAddModal(false); setNewArabic(''); setNewTranslation(''); } }}><Text style={styles.doneTxt}>Save</Text></TouchableOpacity>
+                        <View style={styles.modalHeader}><Text style={styles.modalTitle}>Settings</Text><TouchableOpacity onPress={()=>setShowSettings(false)}><X color="white" /></TouchableOpacity></View>
+                        <View style={styles.settingRow}>
+                            <View style={styles.settingLeft}><Volume2 size={18} color="#10b981"/><Text style={styles.settingText}>Sound</Text></View>
+                            <Switch value={isSoundEnabled} onValueChange={setIsSoundEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
+                        </View>
+                        <View style={styles.settingRow}>
+                            <View style={styles.settingLeft}><Smartphone size={18} color="#10b981"/><Text style={styles.settingText}>Vibration</Text></View>
+                            <Switch value={isVibrationEnabled} onValueChange={setIsVibrationEnabled} trackColor={{ false: '#222', true: '#10b981' }} />
+                        </View>
                     </View>
                 </View>
             </Modal>
+
+            {/* CUSTOM GOAL MODAL */}
+            <Modal visible={showGoalModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}><Text style={styles.modalTitle}>Set Goal</Text><TouchableOpacity onPress={()=>setShowGoalModal(false)}><X color="white" /></TouchableOpacity></View>
+                        <TextInput placeholder="Target Number..." placeholderTextColor="#444" keyboardType="numeric" style={styles.input} value={customGoal} onChangeText={setCustomGoal} />
+                        <TouchableOpacity style={styles.doneBtn} onPress={() => { if(customGoal){ updateTarget(parseInt(customGoal)); setShowGoalModal(false); setCustomGoal(''); } }}><Text style={styles.doneTxt}>Set Target</Text></TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
         </SafeAreaView>
     );
 }
 
-// Styles are the same...
+// ... Styling (Existing styles remain the same)
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#050505' },
     header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 10, alignItems: 'center' },
@@ -622,12 +677,15 @@ const styles = StyleSheet.create({
     footer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, paddingBottom: 40, alignItems: 'center' },
     bottomReset: { width: 45, height: 45, borderRadius: 22, backgroundColor: '#0a0a0a', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#222' },
     targetRow: { flexDirection: 'row', gap: 8 },
-    tBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#0a0a0a' },
+    tBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#0a0a0a', minWidth: 42, alignItems: 'center' },
     tActive: { borderColor: '#10b981', borderWidth: 1 },
     tText: { color: '#444', fontWeight: 'bold', fontSize: 11 },
     toast: { position: 'absolute', left: 20, right: 20, backgroundColor: '#10b981', padding: 15, borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2000 },
     toastText: { fontWeight: 'bold', color: 'black' },
     resetBtnToast: { padding: 5 },
+    syncToast: { position: 'absolute', top: 50, alignSelf: 'center', zIndex: 9999 },
+    blurContent: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20, overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.8)' },
+    syncToastText: { color: 'white', fontSize: 12, fontWeight: '600' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', padding: 20 },
     modalContent: { backgroundColor: '#0a0a0a', borderRadius: 25, padding: 20, gap: 10, borderWidth: 1, borderColor: '#181818' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, alignItems: 'center' },
@@ -643,18 +701,3 @@ const styles = StyleSheet.create({
     doneBtn: { backgroundColor: '#10b981', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 10 },
     doneTxt: { fontWeight: 'bold', color: 'black' }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
