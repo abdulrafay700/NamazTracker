@@ -1686,7 +1686,7 @@ export default function NamazFinalApp() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', padding: 16 },
   toastContainer: { position: 'absolute', top: 50, left: 0, right: 0, alignItems: 'center', zIndex: 9999 },
-  toastContent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0a0a0a', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#10b981', gap: 8, elevation: 10, shadowColor: '#10b981', shadowOpacity: 0.2, shadowRadius: 5 },
+  toastContent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0a0a0a', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#10b981', gap: 8, elevation: 10, boxShadow: '0 0 5 rgba(16, 185, 129, 0.2)' },
   toastText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
   setup: { flex: 1, backgroundColor: '#000', justifyContent: 'center', padding: 25 },
   setupHeader: { alignItems: 'center', marginBottom: 30 },

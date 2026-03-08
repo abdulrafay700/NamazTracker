@@ -24,6 +24,9 @@
 
 import { Stack } from 'expo-router';
 import { LocationProvider } from '../context/LocationContext';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs(['props.pointerEvents is deprecated']);
 
 export default function RootLayout() {
   return (
