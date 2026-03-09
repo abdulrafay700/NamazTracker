@@ -253,6 +253,7 @@
 
 
 
+import AsyncStorage from '@react-native-async-storage/async-storage'; // <-- Ye line lazmi honi chahiye
 import * as Location from 'expo-location';
 import { useRouter } from "expo-router";
 import { Bell, BookOpen, Calculator, Calendar, Clock, HelpingHand, MapPin, Menu, ShieldCheck, Star, X } from 'lucide-react-native';
@@ -266,9 +267,9 @@ import {
   TextInput,
   TouchableOpacity, View
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // <-- Ye line lazmi honi chahiye
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SideDashboard from '../../components/SideDashboard';
+// import SideDashboard from '../../components/SideDashboard';
+import SideDashboard from '../../app/(tabs)/SideDashboard';
 import { useLocation } from '../../context/LocationContext';
 
 const { width } = Dimensions.get('window');

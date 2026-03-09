@@ -29,11 +29,21 @@
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
+    // "web": {
+    //   "output": "static",
+    //   "favicon": "./assets/images/favicon.png"
+      
+    // },
+
+       "web": {
+  "bundler": "metro",
+  "output": "static",
+  "favicon": "./assets/images/favicon.png",
+  "headers": {
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+  }
+},
+      "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
