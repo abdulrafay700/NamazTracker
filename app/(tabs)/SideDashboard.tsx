@@ -7,8 +7,8 @@ import {
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { auth } from '../../firebaseConfig';
 import { GoogleLoginButton } from '../../components/GoogleLoginButton';
+import { auth } from '../../firebaseConfig';
 
 const { width } = Dimensions.get('window');
 
