@@ -29,26 +29,76 @@
 // });
 
 
-//////////////////===============================================================================
 
 
 
 
 
 
-import { LogIn } from 'lucide-react-native';
-import React from 'react';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// /////======================== for native mobile code==============////
+
+  import { LogIn } from 'lucide-react-native';
+import React, { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useGoogleAuth } from '../hooks/useGoogleAuth'; // Confirm karein ke path sahi hai
+// ✨ Naya hook name import karein
+import { useGoogleNativeAuth } from '../hooks/useGoogleAuth';
 
 interface GoogleLoginButtonProps {
   onFinished: () => void;
 }
 
 export const GoogleLoginButton = ({ onFinished }: GoogleLoginButtonProps) => {
-  const { promptAsync, loading, request } = useGoogleAuth(onFinished);
+  const [localLoading, setLocalLoading] = useState(false);
+  
+  // ✨ useGoogleNativeAuth use karein jo humne abhi banaya hai
+  const { signIn } = useGoogleNativeAuth(onFinished);
 
-  if (loading) {
+  const handlePress = async () => {
+    setLocalLoading(true);
+    try {
+      await signIn();
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  if (localLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator color="#10b981" size="small" />
@@ -58,13 +108,9 @@ export const GoogleLoginButton = ({ onFinished }: GoogleLoginButtonProps) => {
 
   return (
     <TouchableOpacity 
-      style={[styles.btn, !request && styles.disabledBtn]} 
-      onPress={() => {
-        if (request) {
-          promptAsync();
-        }
-      }} 
-      disabled={!request || loading}
+      style={styles.btn} 
+      onPress={handlePress}
+      disabled={localLoading}
     >
       <LogIn size={22} color="#10b981" />
       <Text style={styles.text}>Login with Google</Text>
@@ -80,10 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 15,
     borderRadius: 12,
-    backgroundColor: 'transparent' // Ya jo bhi aapka theme ho
-  },
-  disabledBtn: {
-    opacity: 0.5
+    backgroundColor: 'transparent'
   },
   text: { 
     color: '#eee', 

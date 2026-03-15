@@ -1,3 +1,24 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 {
   "project_info": {
     "project_number": "43455085448",
@@ -18,7 +39,7 @@
           "client_type": 1,
           "android_info": {
             "package_name": "com.namaz.tracker.app",
-            "certificate_hash": "d46d0d6e954e4deda22665310914ef9700af16b2"
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {
@@ -37,6 +58,13 @@
             {
               "client_id": "43455085448-fd6imojkjtduu7cvbapjd7nce2cetb7b.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "43455085448-3vid2hrpicd10sso5v37v3ge1tv3qdri.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.namaz.tracker.app"
+              }
             }
           ]
         }
