@@ -72,12 +72,13 @@
 
 
 // /////======================== for native mobile code==============////
-
-  import { LogIn } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { LogIn, LogOut } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// ✨ Naya hook name import karein
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 import { useGoogleNativeAuth } from '../hooks/useGoogleAuth';
+import { CustomAlert } from './CustomAlert';
 
 interface GoogleLoginButtonProps {
   onFinished: () => void;
@@ -85,14 +86,30 @@ interface GoogleLoginButtonProps {
 
 export const GoogleLoginButton = ({ onFinished }: GoogleLoginButtonProps) => {
   const [localLoading, setLocalLoading] = useState(false);
-  
-  // ✨ useGoogleNativeAuth use karein jo humne abhi banaya hai
-  const { signIn } = useGoogleNativeAuth(onFinished);
+  const [user, setUser] = useState<any>(auth.currentUser);
+
+  // Sync user state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    return unsubscribe;
+  }, []);
+
+  const { signIn, logout, showAlert, setShowAlert, alertData } = useGoogleNativeAuth();
 
   const handlePress = async () => {
     setLocalLoading(true);
     try {
-      await signIn();
+      if (user) {
+        await logout(() => {
+            // Logout ke baad dashboard close kar dein
+            onFinished();
+        });
+      } else {
+        await signIn(() => {
+            // Login ke baad dashboard close kar dein
+            onFinished();
+        });
+      }
     } finally {
       setLocalLoading(false);
     }
@@ -107,14 +124,36 @@ export const GoogleLoginButton = ({ onFinished }: GoogleLoginButtonProps) => {
   }
 
   return (
-    <TouchableOpacity 
-      style={styles.btn} 
-      onPress={handlePress}
-      disabled={localLoading}
-    >
-      <LogIn size={22} color="#10b981" />
-      <Text style={styles.text}>Login with Google</Text>
-    </TouchableOpacity>
+    <View>
+      <TouchableOpacity 
+        style={styles.btn} 
+        onPress={handlePress}
+        disabled={localLoading}
+      >
+        {user ? (
+          <>
+            <LogOut size={22} color="#ef4444" />
+            <Text style={[styles.text, { color: '#ef4444' }]}>Sign Out Account</Text>
+          </>
+        ) : (
+          <>
+            <LogIn size={22} color="#10b981" />
+            <Text style={styles.text}>Continue with Google</Text>
+          </>
+        )}
+      </TouchableOpacity>
+
+    <CustomAlert 
+      visible={showAlert}
+      title={alertData.title}
+      message={alertData.message}
+      type={alertData.actionType} // ✨ Ye bata raha hai ke button par kya likhna hai
+      onClose={() => {
+        setShowAlert(false);
+        onFinished();
+      }}
+    />
+    </View>
   );
 };
 
@@ -126,12 +165,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 15,
     borderRadius: 12,
-    backgroundColor: 'transparent'
   },
   text: { 
     color: '#eee', 
     fontSize: 15, 
-    fontWeight: '500' 
+    fontWeight: '600',
   },
   loaderContainer: {
     paddingVertical: 18,

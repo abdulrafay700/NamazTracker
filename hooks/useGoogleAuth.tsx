@@ -85,10 +85,9 @@
 
 // /////======================== for native mobile code==============////
 
-
+import { useState } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { GoogleAuthProvider, signInWithCredential, signOut } from 'firebase/auth';
-import { Alert } from 'react-native';
+import { GoogleAuthProvider, signInWithCredential, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 
 GoogleSignin.configure({
@@ -97,56 +96,49 @@ GoogleSignin.configure({
   forceCodeForRefreshToken: true,
 });
 
-export const useGoogleNativeAuth = (onSuccess: () => void) => {
-  
-  const signIn = async () => {
+export const useGoogleNativeAuth = () => {
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertData, setAlertData] = useState({ title: '', message: '', actionType: '' });
+
+  const signIn = async (onSuccess: () => void) => {
     try {
       await GoogleSignin.hasPlayServices();
-
-      // ✨ Force Account Selection: Clear previous session before showing popup
-      try {
-        await GoogleSignin.signOut();
-      } catch (e) {
-        // Ignore if no user was signed in
-      }
+      try { await GoogleSignin.signOut(); } catch (e) {}
 
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
 
-      if (!idToken) throw new Error("ID Token missing");
+      if (idToken) {
+        const credential = GoogleAuthProvider.credential(idToken);
+        const result = await signInWithCredential(auth, credential);
 
-      const credential = GoogleAuthProvider.credential(idToken);
-      const result = await signInWithCredential(auth, credential);
-
-      // ✨ Professional Arabic/English Alert
-      Alert.alert(
-        "مَا شَاءَ اللّٰهُ", 
-        `Welcome, ${result.user.displayName}. Your spiritual dashboard is ready.`,
-        [{ text: "Proceed", onPress: onSuccess, style: "default" }]
-      );
-    } catch (error: any) {
-      if (error.code !== 'SIGN_IN_CANCELLED') {
-        Alert.alert("Authentication Error", "An error occurred during sign-in. Please try again.");
+        setAlertData({
+          title: "مَا شَاءَ اللّٰهُ",
+          message: `Welcome, ${result.user.displayName}. Your spiritual dashboard is ready.`,
+          actionType: 'LOGIN'
+        });
+        setShowAlert(true);
       }
-    }
-  };
-
-  const logout = async (onLogoutSuccess?: () => void) => {
-    try {
-      // Clear Google and Firebase sessions
-      await GoogleSignin.signOut();
-      await signOut(auth);
-
-      Alert.alert(
-        "فِي أَمَانِ اللّٰه", 
-        "You have been successfully signed out. May your day be blessed.",
-        [{ text: "Dismiss", onPress: onLogoutSuccess }]
-      );
     } catch (error) {
-      console.error("Logout Error:", error);
-      Alert.alert("Error", "Failed to sign out properly.");
+      console.error(error);
     }
   };
 
-  return { signIn, logout };
+  const logout = async (onSuccess: () => void) => {
+    try {
+      await GoogleSignin.signOut();
+      await firebaseSignOut(auth);
+
+      setAlertData({
+        title: "فِي أَمَانِ اللّٰه",
+        message: "You have been successfully signed out. May your day be blessed.",
+        actionType: 'LOGOUT'
+      });
+      setShowAlert(true);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return { signIn, logout, showAlert, setShowAlert, alertData };
 };
